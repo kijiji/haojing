@@ -1,0 +1,11 @@
+
+.DS_Store
+*.swp
+.idea
+.settings
+.buildpath
+.project
+nbproject
+sftp-config.json
+.tags
+.tags_sorted_by_file

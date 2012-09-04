@@ -1,3 +1,6 @@
 [submodule "htdocs/utility"]
 	path = htdocs/utility
 	url = git@github.com:baixing/haojing_utility.git
+[submodule "htdocs/graph"]
+	path = htdocs/graph
+	url = git@github.com:baixing/haojing_graph.git
