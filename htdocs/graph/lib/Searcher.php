@@ -45,6 +45,8 @@ class Searcher {
 			'sort'	=>	array('id' => array('order' => 'desc')),
 		);
 		$params = array_merge($params, $options);
+		$params['size'] = min(max($params['size'], 1), 1000);
+		$params['from'] = min(max($params['from'], 0), 10000);
 		$response = self::read("graph/{$type}/_search/", $params);
 		return new SearchResult($response);
 	}

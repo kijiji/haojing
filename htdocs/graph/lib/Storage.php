@@ -157,7 +157,7 @@ class MongoStorage extends Storage implements ReadableStorage, SearchableStorage
 		
 		array_walk_recursive($result, function(&$val) {
 			if (is_string($val)) {
-				$val = str_replace(['ref:'], '', $val);
+				$val = str_replace(['ref:', 'china'], '', $val);
 			}
 		});
 
