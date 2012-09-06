@@ -18,6 +18,7 @@ class Listing {
 		$opts = array_intersect_key($args, $allowedOptions);
 		$args = array_diff_key($args, $allowedOptions);
 		foreach ($args as $field => $value) {
+			//todo: _i and _s should be removed by we switch the write.
 			if (preg_match('/^\[(\d*),(\d*)\]$/', $value, $m)) {
 				$queryClass = substr($field,-4) === 'Time' ? 'DateRangeQuery' : 'RangeQuery';
 				$query->add(new $queryClass($queryClass == 'RangeQuery' ? $field . '_i' : $field, $m[1] ?: null, $m[2] ?: null));
