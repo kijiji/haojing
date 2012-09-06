@@ -9,3 +9,7 @@ nbproject
 sftp-config.json
 .tags
 .tags_sorted_by_file
+
+htdocs/graph/config/env.php
+
+htdocs/graph/config/routing.php
