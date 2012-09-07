@@ -10,7 +10,7 @@ class Query {
 	}
 	
 	function esQuery() {
-		if (in_array($this->field, ['description', 'title', 'content'])) {
+		if (in_array($this->field, ['title', 'content']) ) {	//ES的meta配置里面对title和content字段都做了分词
 			return ['text' => [$this->field => ['query' => $this->value, 'operator' => 'and']]];
 		} else {
 			return ['term' => [$this->field => $this->value]];

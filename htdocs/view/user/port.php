@@ -72,7 +72,7 @@
 				<span class="list-item-block"><time><?=date('m月d日', $ad->createdTime)?></time></span>
 				<div class="list-item-content">
 					<a href="http://<?=$ad->cityEnglishName?>.baixing.com/<?=$ad->category->id?>/a<?=$ad->id?>.html"
-					   target="_blank" class="topicLink"><?=$ad->name?></a>
+					   target="_blank" class="topicLink"><?=$ad->title?></a>
 				</div>
 				<span class="list-item-block"><price><?=$ad->{"价格"} ?: $ad->{'工资'} ?: '面议'?></price></span>
 			</li>
