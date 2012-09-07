@@ -93,9 +93,7 @@ class SearchBuilder extends Data {
 				$doc[$name] = $value->id;
 			} elseif (!is_scalar($value) || strlen($value) == 0 || is_array($value)) {
 				continue;
-			} elseif (preg_match("/.*(Date|Time)$/i", $name, $match)) {
-				$doc[$name] = date('Ymd\THis\Z', intval($value));
-			} else {
+			}  else {
 				$doc[$name] = $value;
 			}
 		}
