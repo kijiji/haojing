@@ -94,7 +94,7 @@
 				<img class="images-item-img"  src="<?=$img_url?>">
 
 				<div class="images-item-caption">
-					<strong><?=$ad->name?></strong>
+					<strong><?=$ad->title?></strong>
 
 					<p class="images-item-caption-meta">
 						<em><?=date('m月d日', $ad->createdTime)?></em> / <?=count($ad->images)?>图
