@@ -106,8 +106,6 @@ class Data {
 			return 'Ad';
 		} elseif (preg_match('/^(m[0-9]+|china)$/', $id)) { //todo: compatible with china, and will remove when the data is clean.
 			return 'Entity';
-		} elseif (preg_match('/^c_[a-z]+$/', $id)) {
-			return 'City';
 		} elseif (preg_match('/^[a-z]+$/', $id)) {
 			return 'Category';
 		} elseif (preg_match('/^([a-z]+[:]?)/', substr($id, 0, 4), $matches)) {
