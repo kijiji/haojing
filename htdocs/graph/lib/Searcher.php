@@ -45,34 +45,39 @@ class Searcher {
 			'sort'	=>	array('id' => array('order' => 'desc')),
 		);
 		$params = array_merge($params, $options);
-		$response = self::read("graph/{$type}/_search/", $params);
+		$params['size'] = min(max($params['size'], 1), 1000);
+		$params['from'] = min(max($params['from'], 0), 10000);
+		$response = self::read(self::locate($type) . "/_search/", $params);
 		return new SearchResult($response);
 	}
 
 	public static function index($type, $doc) {
-		return self::write("graph/{$type}/", $doc);
+		return self::write(self::locate($type), $doc);
 	}
 	
+	private static function locate($type){
+		$mapping = Config::get("env.searcher.mapping");
+		if (isset($mapping[$type])) {
+			return "{$mapping[$type]}/{$type}";
+		} else {
+			return "default/{$type}";
+		}
+	} 
+	
 	private static function read($uri, $params) {
-		$url = self::host('read') . $uri;
 		$params['timeout']	= self::READ_TIMEOUT . 's';
-		return self::request($url, $params, 'read');
+		return self::request($uri, $params, 'read');
 	}
 
 	private static function write($uri, $params) {
-		usleep('10000');
-		$url = self::host('write') . $uri;
 		$params['timeout']	= self::WRITE_TIMEOUT . 's';
 		$params['replication ']	= 'async';
-		return self::request($url, $params, 'write');
+		return self::request($uri, $params, 'write');
 	}
 	
-	private static function host($type = 'read') {
-		return Config::get("env.searcher.{$type}");
-	}
-	
-	private static function request($url, $params = [], $type = 'read') {
+	private static function request($uri, $params = [], $type = 'read') {
 		$cUrl = curl_init();
+		$url = Config::get("env.searcher.cluster") . $uri;
 		curl_setopt($cUrl, CURLOPT_URL, $url);
 		curl_setopt($cUrl, CURLOPT_RETURNTRANSFER, TRUE);
 		curl_setopt($cUrl, CURLOPT_HEADER, FALSE);

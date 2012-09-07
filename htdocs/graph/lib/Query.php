@@ -88,13 +88,6 @@ class RangeQuery extends Query {
 	}
 }
 
-class DateRangeQuery extends RangeQuery {
-	protected function format($val) {
-		return date('Ymd\THis\Z', $val);
-	}
-}
-
-
 class NotQuery extends AndQuery {
 	function esQuery() {
 		$arr = ['bool' => ['must_not' => []]];
@@ -135,4 +128,3 @@ class InQuery extends OrQuery {
 		return $arr;
 	}
 }
-
