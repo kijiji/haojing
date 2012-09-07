@@ -2,12 +2,11 @@
 //lianghonghao@baixing.com
 class Url {
 	private static 
-		$url_data,
+		$current_get,
 		$current_host;
 	
 	private 
 		$get_data,
-		$post_data,
 		$host,
 		$path,
 		$segments;
@@ -23,14 +22,10 @@ class Url {
 	}
 	
 	public function __construct() {
-		if (!isset(self::$url_data)) {
-			self::$url_data = array(
-			    'get' => $this->stripallslashes($_GET),
-			    'post' => $this->stripallslashes($_POST),
-			);
+		if (!isset(self::$current_get)) {
+			self::$current_get = $this->stripallslashes($_GET);
 		}
-		$this->get_data = self::$url_data['get'];
-		$this->post_data = self::$url_data['post'];
+		$this->get_data = self::$current_get;
 		$this->path = isset($_SERVER['SCRIPT_URL']) ? $_SERVER['SCRIPT_URL'] : '/';
 	}
 	
@@ -42,10 +37,7 @@ class Url {
 		$this->get_data[$field] = $value;
 		return $this;
 	}
-	
-	public function post($field, $default_value = null) {
-		return isset($this->post_data[$field]) ? $this->post_data[$field] : $default_value;
-	}
+
 	#应该返回$value 还是 $this，这是一个问题
 	public function delete($field) {
 		unset($this->get_data[$field]);

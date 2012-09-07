@@ -32,7 +32,7 @@ class View {
 			try {
 				include $this->file_name;
 			} catch (Exception $e) {
-				var_dump($e);
+				ErrorHandler::handleException($e);
 			}
 		}
 
