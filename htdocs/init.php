@@ -3,7 +3,7 @@
 include __DIR__ . "/graph/init.php";
 
 define('CONTROLLER_DIR', __DIR__ . "/controller");
-define('VIEWS_DIR', __DIR__ . "/view");
+define('VIEW_DIR', __DIR__ . "/view");
 
 spl_autoload_register(function($name) {
 	$name = strtr($name, '\\', DIRECTORY_SEPARATOR);

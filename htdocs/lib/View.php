@@ -1,7 +1,7 @@
 <?php
 //lianghonghao@baixing.com
-if(!defined('VIEWS_DIR')) {
-	trigger_error('You should define VIEWS_DIR first', E_USER_ERROR);
+if(!defined('VIEW_DIR')) {
+	trigger_error('You should define VIEW_DIR first', E_USER_ERROR);
 }
 
 class View {
@@ -11,7 +11,7 @@ class View {
 
 	public function __construct ($view_name, array $data = []) {
 		$this->data = $data;
-		$this->file_name = VIEWS_DIR . DIRECTORY_SEPARATOR . $view_name . '.php';
+		$this->file_name = VIEW_DIR . DIRECTORY_SEPARATOR . $view_name . '.php';
 	}
 
 	public function __get($name) {
