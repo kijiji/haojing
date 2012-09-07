@@ -1,4 +1,5 @@
 <?
+//zhaojun@baixing.com
 
 trait ValidatorTrait {
 	//todo: implement errors and message.

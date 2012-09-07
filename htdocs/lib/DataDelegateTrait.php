@@ -1,4 +1,6 @@
 <?
+//zhaojun@baixing.com
+
 trait DataDelegateTrait {
 	protected $data;
 
