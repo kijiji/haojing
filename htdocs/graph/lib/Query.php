@@ -5,6 +5,7 @@ class Query {
 	protected $field;
 	protected $value;
 
+	//todo: query need to support object as value;
 	public function __construct($field, $value) {
 		list($this->field, $this->value) = [$field, $value];
 	}
@@ -18,7 +19,7 @@ class Query {
 	}
 
 	function accept($o) {
-		return (is_string($o->{$this->field}) ?: $o->{$this->field}->id) == $this->value;
+		return (is_scalar($o->{$this->field}) ?: $o->{$this->field}->id) == $this->value;
 	}
 }
 
