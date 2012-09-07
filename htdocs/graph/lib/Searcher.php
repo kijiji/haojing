@@ -70,7 +70,6 @@ class Searcher {
 	}
 
 	private static function write($uri, $params) {
-		usleep('10000');
 		$params['timeout']	= self::WRITE_TIMEOUT . 's';
 		$params['replication ']	= 'async';
 		return self::request($uri, $params, 'write');
