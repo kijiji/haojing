@@ -2,15 +2,11 @@
 //zhaojun@baixing.com
 
 abstract class Service {
-	use DataDelegateTrait, AccrualBasedAccountingTrait, ValidatorTrait {
-		DataDelegateTrait::__contruct				as __contruct;
-		DataDelegateTrait::bind						as bind;
-		AccrualBasedAccountingTrait::occuredRevenue as occuredRevenue;
-        ValidatorTrait::validate 					as validate;
-	}
+	use DataDelegateTrait, AccrualBasedAccountingTrait, ValidatorTrait;
 
 	public static function factory($type, $data = null) {
 		$className = $type . 'Service';
+		if (!class_exists($className)) throw new Exception('None implement of service type : ' . $type);
 		return new $className($data);
 	}
 
@@ -58,6 +54,7 @@ abstract class Service {
 
 abstract class TimebasedService extends Service {
 	protected function shippedPercentage($time) {
+		if (!$this->vaildDays) throw new Exception("Service {$this->id} without validDays!");
 		$time = min($time, $this->cancelTime ?: $this->endTime);
 		return ceil(max(($time - $this->startTime), 0) / 86400) / $this->vaildDays;
 	}
@@ -157,6 +154,7 @@ class DingService extends TimebasedService {
 			}
 			$adIds[] = $service->ad->id;
 		}
+
 		$ads += Listing::search($category, $area, $args, new InQuery('id', $adIds))->objs();//use Listing::search to re-check
 		return $ads;
 	}
@@ -227,14 +225,17 @@ trait DataDelegateTrait {
 	}
 
 	public function __get($name) {
+		if (!$this->data) throw new Exception('Need bind data first!');
 		return $this->data->$name;
 	}
 
 	public function __set($name, $value) {
+		if (!$this->data) throw new Exception('Need bind data first!');
 		return $this->data->$name = $value;
 	}
 
 	public function __call($name, $args) {
+		if (!$this->data) throw new Exception('Need bind data first!');
 		return call_user_func_array(array($this->data, $name), $args);
 	}
 }
@@ -272,20 +273,22 @@ trait AccrualBasedAccountingTrait {
 }
 
 class CompanyAccount {
-	function occuredRevenue($starTime, $endTime) {
+	public static function occuredRevenue($startTime, $endTime) {
 		$money = 0;
 
 		if ($endTime > time()) 
 			throw new Exception("Refuse to tell you future, because that may be inaccurate");
 
 		$q = new AndQuery(
-				new DateRangeQuery('startTime', null, $endTime),
+				new DateRangeQuery('startTime', null, $endTime)
 				,new DateRangeQuery('endTime', $startTime - 1, null)
 			);
 		$s = Searcher::query('Service', $q);
 
-		foreach ($s->objs() as $service)
+		foreach ($s->objs() as $serviceData) {
+			$service = Service::factory(ucfirst($serviceData->type), $serviceData);
 			$money += ($service->occuredRevenue($endTime) - $service->occuredRevenue($startTime));
+		}
 
 		return $money;
 	}
