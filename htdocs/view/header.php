@@ -30,8 +30,8 @@
 			document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/; domain=.baixing.com";
 		}
 	</script>
-	<link rel="stylesheet" href="http://static.baixing.net/media/css/puerh.css" />
-	<link rel="stylesheet" href="http://static.baixing.net/media/css/puerh-page.css" />
+	<link rel="stylesheet" href="http://www.baixing.com/media/css/puerh.css" />
+	<link rel="stylesheet" href="http://www.baixing.com/media/css/puerh-page.css" />
 </head>
 <body>
 <div id="bxTips" class="hide"><span></span></div>
@@ -43,8 +43,8 @@
 			</div>
 
 		<div class="topbar">
-			<? if (Cookie::get('__n')) { ?>
-			<span class="topbar-right-text">欢迎，<a href="http://www.baixing.com/wo/"><?=Cookie::get('__n')?></a>
+			<? if (isset($_COOKIE['__n'])) { ?>
+			<span class="topbar-right-text">欢迎，<a href="http://www.baixing.com/wo/"><?=$_COOKIE['__n']?></a>
 			[<a href="/auth/tuichu/?src=homeheader">退出</a>]</span>
 			<? } else { ?>
 			<a href="http://www.baixing.com/auth/zhuce/?src=headerHome" rel="nofollow">注册</a> <span class="sep">|</span>
