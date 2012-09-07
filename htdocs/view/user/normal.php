@@ -52,16 +52,15 @@
 <div id="gridlist" class="grid grid-20">
 	<div id="aside-left" class="grid grid-4 first">
 		<div class="aside">
-			<div class="aside-box aside-box-noborder"><p></p>
-			<?php if (count($user->images)) { ?>
-				<div id="userImg">
-					<img src=<?=$user->images[0]->square_180?> />
-				</div>
-			<? } else { ?>
+			<div id="userImg">
+				<?php if (count($user->images)) { ?>
+				<img src=<?=$user->images[0]->square_180?>/>
+				<? } else { ?>
 				<div class="outter">TA 还没有头像</div>
-			<? } ?>
+				<? } ?>
+			</div>
 
-				<h4 class="typo-h4 user-nick">
+			<h4 class="typo-h4 user-nick">
 					<a href="http://www.baixing.com/u/<?=trim($user->id, 'u')?>/" target="_blank">
 						<strong><?=$user->name?></strong>
 					</a>
