@@ -6,8 +6,7 @@ interface ReadableStorage {
 }
 
 interface SearchableStorage {
-	public function getAllIds();
-	public function getModifiedIds($timestamp);
+	public function dumpIds();
 }
 
 class Storage {
@@ -25,7 +24,7 @@ class Storage {
 
 class MysqlStorage extends Storage implements ReadableStorage, SearchableStorage {
 	private $result;
-	private static $connections = [];
+	private static $connections = array();
 	
 	private static function get_connection($db, $type = '.read', $reConnect = false) {
 		if($reConnect || !isset(self::$connections[$db.$type])) {
@@ -80,7 +79,7 @@ class MysqlStorage extends Storage implements ReadableStorage, SearchableStorage
 
 	private function parseFromResult() {
 		$row = mysql_fetch_assoc($this->result);
-		if(!$row) return [];
+		if(!$row) return array();
 		
 		if(isset($row['attributeData'])) {
 			preg_match_all("/([^:]+):(.*)\n/", $row['attributeData'] . "\n", $matches);
@@ -101,8 +100,7 @@ class MysqlStorage extends Storage implements ReadableStorage, SearchableStorage
 		return trim($string, ',');
 	}
 
-	//Start For Searchable
-	public function getAllIds() {
+	public function dumpIds() {
 		$conn = self::get_connection($this->config['db']);
 		$sql = "SELECT `{$this->config['columns']['id']}` FROM `{$this->config['table']}` ORDER BY `{$this->config['columns']['id']}` DESC" ;
 		$this->result = mysql_unbuffered_query($sql, $conn);
@@ -112,30 +110,10 @@ class MysqlStorage extends Storage implements ReadableStorage, SearchableStorage
 		}
 		return $bigArray;
 	}
-
-	public function getModifiedIds($timestamp) {
-		$col = isset($this->config['columns']['modifiedTime']) ? 'modifiedTime'
-			: (isset($this->config['columns']['createdTime']) ? 'createdTime' : null);
-		if(!$col) return [];
-		
-		$conn = self::get_connection($this->config['db']);
-		$sql = "SELECT `{$this->config['columns']['id']}` "
-		. "FROM `{$this->config['table']}` "
-		. "WHERE `{$this->config['columns'][$col]}` >= {$timestamp} "
-		. "ORDER BY `{$this->config['columns'][$col]}` ASC" ;
-		$this->result = mysql_unbuffered_query($sql, $conn);
-		$big_array = new BigArray();
-		while($row = mysql_fetch_row($this->result)) {
-			$big_array->push($row[0]);
-		}
-		return $big_array;
-	}
-
-	//End For Searchable
 }
 
 class MongoStorage extends Storage implements ReadableStorage, SearchableStorage {
-	private static $connections = [];
+	private static $connections = array();
 
 	private static function get_connection($db, $type = 'read') {
 			if(!isset(self::$connections[$db.$type])) {
@@ -153,12 +131,12 @@ class MongoStorage extends Storage implements ReadableStorage, SearchableStorage
 					)
 				);
 		
-		if(!$result) return [];
+		if(!$result) return array();
 		
 		array_walk_recursive($result, function(&$val) {
 			if (is_string($val)) {
 				//@hardcode， china在Entity里面的id是china，load不出来。
-				$val = str_replace(['ref:', 'china'], '', $val);
+				$val = str_replace(array('ref:', 'china'), '', $val);
 			}
 		});
 
@@ -167,10 +145,10 @@ class MongoStorage extends Storage implements ReadableStorage, SearchableStorage
 		return $result;
 	}
 
-	public function getAllIds() {
+	public function dumpIds() {
 		$cursor = self::get_connection($this->config['db'])
 				->selectCollection($this->config['table'])
-				->find([], array('_id' => true));
+				->find(array(), array('_id' => true));
 
 		$bigArray = new BigArray();
 		foreach ($cursor as $row) {
@@ -178,16 +156,12 @@ class MongoStorage extends Storage implements ReadableStorage, SearchableStorage
 		}
 		return $bigArray;
 	}
-
-	public function getModifiedIds($since_timestamp) {
-		return [];
-	}
 }
 
 class IpStorage extends Storage implements ReadableStorage {
 	public function load($ip) {
 		if (ip2long($ip) === false) {
-			return [];
+			return array();
 		} else {
 			return array( 'url' => "http://ip.taobao.com/service/getIpInfo.php?ip={$ip}" );
 		} 
@@ -199,22 +173,45 @@ class MobileNumberStorage extends Storage implements ReadableStorage {
 		if(preg_match('/^1[3458][0-9]{9}$/', $mobile)) {
 			return array( 'url' => "http://www.ip138.com:8080/search.asp?action=mobile&mobile={$mobile}" );
 		} else {
-			return [];
+			return array();
 		}
 	}
 }
 
 class ImageStorage extends Storage implements ReadableStorage {
 	public function load($img) {
+		list($img_id, $type) = explode('.',  $img);
+		if (strpos($type, '#up') !==  FALSE) {
+			$type = explode('#', $type)[0];
+			return $this->youpai($img_id, $type);
+		} else {
+			return $this->mongo($img_id, $type);
+		}
+	}
+	private function mongo($img_id, $type) {
+		$sizeList = [
+			'big' => '',
+			'square' => '_sq',
+			'small' => '_sm',
+			'square_180' => '/180x180',
+		];
+		$data = array();
+		foreach ($sizeList as $name => $subfix) {
+			$data[$name] = "http://img.baixing.net/m/{$img_id}{$subfix}.{$type}";
+		}
+		return $data;
+	}
+
+	private function youpai($img_id, $type) {
 		$sizeList = array(
 			'big'	=>	'bi',
 			'square' => 'sq',
 			'small' => 'sm',
 			'square_180' => '180x180',
 		);
-		$data = [];
+		$data = array();
 		foreach ($sizeList as $name => $subfix) {
-			$data[$name] = "http://tu.baixing.net/{$img}_{$subfix}";
+			$data[$name] = "http://tu.baixing.net/{$img_id}.{$type}_{$subfix}";
 		}
 		return $data;
 	}
