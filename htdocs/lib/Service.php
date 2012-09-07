@@ -45,9 +45,9 @@ abstract class Service {
 	protected static function activeQuery($time = null) {
 		if (!$time) $time = time();
 		return new AndQuery(
-				new DateRangeQuery('startTime', null, $time + 1),
-				new DateRangeQuery('endTime', $time, null),
-				new NotQuery(new DateRangeQuery('cancelTime', null, $time + 1))
+				new RangeQuery('startTime', null, $time + 1),
+				new RangeQuery('endTime', $time, null),
+				new NotQuery(new RangeQuery('cancelTime', null, $time + 1))
 			);
 	}
 }
@@ -280,8 +280,8 @@ class CompanyAccount {
 			throw new Exception("Refuse to tell you future, because that may be inaccurate");
 
 		$q = new AndQuery(
-				new DateRangeQuery('startTime', null, $endTime)
-				,new DateRangeQuery('endTime', $startTime - 1, null)
+				new RangeQuery('startTime', null, $endTime)
+				,new RangeQuery('endTime', $startTime - 1, null)
 			);
 		$s = Searcher::query('Service', $q);
 
