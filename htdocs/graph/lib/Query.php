@@ -78,9 +78,3 @@ class RangeQuery extends Query {
 	}
 
 }
-
-class DateRangeQuery extends RangeQuery {
-	protected function format($val) {
-		return date('Ymd\THis\Z', $val);
-	}
-}
