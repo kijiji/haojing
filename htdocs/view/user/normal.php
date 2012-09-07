@@ -54,24 +54,22 @@
 		<div class="aside">
 			<div id="userImg">
 				<?php if (count($user->images)) { ?>
-				<img src=<?=$user->images[0]->square_180?>/>
+				<img src="<?=$user->images[0]->square_180?>"/>
 				<? } else { ?>
 				<div class="outter">TA 还没有头像</div>
 				<? } ?>
 			</div>
-
 			<h4 class="typo-h4 user-nick">
-					<a href="http://www.baixing.com/u/<?=trim($user->id, 'u')?>/" target="_blank">
-						<strong><?=$user->name?></strong>
-					</a>
-					<span class="icon icon-phone <?=$user->MobileVerified ? 'icon-phone-done' : ''?>"></span>
-				</h4>
-				<small class="userinfo-des">
-					<?=$user->area ? $user->area->name . ' • ' : ''?>已注册<?=ceil((time() - $user->createdTime) / 86400)?>天
-					<p><?=$user->description?></p>
+				<a href="http://www.baixing.com/u/<?=trim($user->id, 'u')?>/" target="_blank">
+					<strong><?=$user->name?></strong>
+				</a>
+				<span class="icon icon-phone <?=$user->MobileVerified ? 'icon-phone-done' : ''?>"></span>
+			</h4>
+			<small class="userinfo-des">
+				<?=$user->area ? $user->area->name . ' • ' : ''?>已注册<?=ceil((time() - $user->createdTime) / 86400)?>天
+				<p><?=$user->description?></p>
 
-				</small>
-			</div>
+			</small>
 		</div>
 		&nbsp;</div>
 	<div id="content" class="grid grid-16 last clearfix">
