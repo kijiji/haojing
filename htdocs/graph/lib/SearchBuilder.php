@@ -1,8 +1,10 @@
 <?php
 
-if (!defined('LOG_DIR')) {
+if (!defined('LOG_DIR'))
 	trigger_error('LOG_DIR is undefined !', E_USER_ERROR);
-}
+
+if (!defined('TEMP_DIR'))
+	trigger_error('TEMP_DIR is undefined !', E_USER_ERROR);
 
 class SearchBuilder extends Data {
 	private $type;
@@ -86,18 +88,9 @@ class SearchBuilder extends Data {
 	}
 
 	private function buildDoc($node) {
-		$doc = [];
-
-		foreach ($node as $name => $value) {
-			if ($value instanceof Node) {
-				$doc[$name] = $value->id;
-			} elseif (!is_scalar($value) || strlen($value) == 0 || is_array($value)) {
-				continue;
-			}  else {
-				$doc[$name] = $value;
-			}
-		}
-		return $doc;
+		$className = $node->type() . 'Doc';
+		if (class_exists($className)) return $className::buildDoc($node);
+		else return NodeDoc::buildDoc($node);
 	}
 
 }
@@ -120,3 +113,30 @@ class Locker {
 		}
 	}
 }
+
+class NodeDoc {
+	public static function buildDoc($node) {
+		$doc = [];
+		foreach ($node as $name => $value) {
+			if ($value instanceof Node) {
+				$doc[$name] = $value->id;
+			} elseif (!is_scalar($value) || strlen($value) == 0 || is_array($value)) {
+				continue;
+			} else {
+				$doc[$name] = $value;
+			}
+		}
+		return $doc;
+	}
+}
+
+class AdDoc extends NodeDoc {
+	public static function buildDoc($ad) {
+		$doc = parent::buildDoc($ad);
+		$area = $ad->area ?: graph($ad->city->objectId);
+		$doc['areas'] = join(' ', Util::object_map($area->path(), 'id'));
+		$doc['categories'] = join(' ', [$ad->categoryFirstLevelEnglishName, $ad->categoryEnglishName]);
+		return $doc;
+	}
+}
+
