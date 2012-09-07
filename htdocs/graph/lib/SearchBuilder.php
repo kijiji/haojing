@@ -137,6 +137,8 @@ class AdDoc extends NodeDoc {
 		$doc = parent::buildDoc($ad);
 		$area = $ad->area ?: graph($ad->city->objectId);
 		$doc['areas'] = join(' ', Util::object_map($area->path(), 'id'));
+		$doc['categories'] = join(' ', [$ad->categoryFirstLevelEnglishName, $ad->categoryEnglishName]);
 		return $doc;
 	}
 }
+
