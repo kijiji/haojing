@@ -135,13 +135,8 @@ class MongoStorage extends Storage implements ReadableStorage, SearchableStorage
 		
 		array_walk_recursive($result, function(&$val) {
 			if (is_string($val)) {
-<<<<<<< HEAD
-				$val = str_replace(array('ref:'), '', $val);
 				$val = str_replace(array('ref:', 'china'), '', $val);
-=======
 				//@hardcode， china在Entity里面的id是china，load不出来。
-				$val = str_replace(['ref:', 'china'], '', $val);
->>>>>>> 根据考总review意见修改
 			}
 		});
 
