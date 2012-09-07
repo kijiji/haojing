@@ -96,16 +96,17 @@ class PortService extends TimebasedService {
     		}
     	}
     	if (!$portType) return false;
-    	return self::isOnService($ad->user->id, $portType, $ad->city->id);
+    	return self::isOnService($ad->user->id, $portType, $ad->city->englishName);
     }
 
-    public static function isOnService($userId, $type = null, $cityId = null) {
+    public static function isOnService($userId, $type = null, $cityEnglishName = null) {
 		$q = new AndQuery(
 				self::activeQuery()
 				,new Query('user', $userId)
 			);
 		if ($type) $q->add(new Query('type', $type));
-		if ($cityId) $q->add(new Query('city', $cityId));
+		//todo: replace cityEnglishName with area when refactor.
+		if ($cityEnglishName) $q->add(new Query('cityEnglishName', $cityEnglishName));
 		$s = Searcher::query('Service', $q);
 		return $s->totalCount() > 0;
     }
