@@ -1,8 +1,6 @@
 <?
 
 class Listing {
-	public static function 
-
 	public static function ding($category, $area, $args) {
 		Service::factory('DingService');
 		return DingService::ads($category, $area, $args);
