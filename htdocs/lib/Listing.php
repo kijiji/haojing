@@ -8,8 +8,7 @@ class Listing {
 			,new Query('status', 0)
 		);
 
-		if ($appendQuery)
-			$query->add($appendQuery);
+		if ($appendQuery) $query->add($appendQuery);
 
 		$allowedOptions = array(
 			'size' => true,
@@ -30,13 +29,14 @@ class Listing {
 							$useMuti = true;
 					} catch(Exception $e) {}
 				}
-				if ($useMuti)
+				if ($useMuti) {
 					$query->add(new OrQuery(
 						new Query($field, $value)
 						,new Query($field . '_s', $value)
 					));
-				else
+				} else {
 					$query->add(new Query($field, $value));
+				}
 			}
 		}
 		return Searcher::query('Ad', $query, $opts);
