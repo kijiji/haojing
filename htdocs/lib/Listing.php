@@ -1,7 +1,14 @@
 <?
 
 class Listing {
-	static function search($category, $area, $args, $appendQuery = null) {
+	public static function 
+
+	public static function ding($category, $area, $args) {
+		Service::factory('DingService');
+		return DingService::ads($category, $area, $args);
+	}
+
+	public static function search($category, $area, $args, $appendQuery = null) {
 		$query = new AndQuery(
 			new Query('category', $category->id)
 			,new Query('areas', $area->id)
@@ -25,8 +32,7 @@ class Listing {
 				if (preg_match("/^m[0-9]+$/", $value, $match)) {
 					try {
 						$node = graph($value);
-						if ($node->type() == 'Entity')
-							$useMuti = true;
+						if ($node->type() == 'Entity') $useMuti = true;
 					} catch(Exception $e) {}
 				}
 				if ($useMuti) {
