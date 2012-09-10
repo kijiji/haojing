@@ -12,9 +12,9 @@ abstract class Service {
 
 	public function init($params) {
 		if ($this->id) throw new Exception('Can not init an exist service');
-		foreach ($this->allowedFields() as $key => $required) {
+		foreach ($this->allowedFields() as $key => $validateRule) {
 			$this->$key = $params->$key;
-			if ($required && !$this->validate($required, $this->$key)) throw new Exception('need required field:' . $key);
+			if (!$this->validate($this->$key, $validateRule)) throw new Exception('need required field:' . $key);
 		}
 		$this->save();
 	}
@@ -33,7 +33,7 @@ abstract class Service {
 	}
 
 	protected function allowedFields() {
-		return ['userId' => true, 'days' => ['validInt', 1, 365], 'listPrice' => ['validInt', 1]];
+		return ['userId' => true, 'days' => ['validNumber', 1, 365], 'listPrice' => ['validNumber', 0]];
 	}
 
 	protected function activate($time) {
