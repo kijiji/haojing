@@ -7,19 +7,10 @@ class User_Controller {
 
 		$user = graph($user_id);
 
-		#@todo 和赵赵的要配合起来
-		#$port_type = Service\Port::getPortType($user);
-
-		if ($user->jobPort || $user->port || $user->carStore) {
-			if ($user->jobPort) {
-				$port_category = array('gongzuo', 'jianzhi');
-			} elseif ($user->port) {
-				$port_category = array('fang');
-			} elseif ($user->carStore) {
-				$port_category = array('cheliang');
-			}
-
-			$content = new View('user/port', compact('user', 'port_category'));
+		Service::factory('Port');
+		if (($port_type = PortService::isOnService($user->id))) {
+			$portFilter = PortService::categoryMapping()[$port_type];
+			$content = new View('user/port', compact('user', 'portFilter'));
 		} else {
 			$content = new View('user/normal', compact('user'));
 		}
