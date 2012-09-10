@@ -78,7 +78,7 @@ abstract class TimebasedService extends Service {
 
 class PortService extends TimebasedService {
 
-	public static function categoryMapping() {
+	public function categoryMapping() {
 		return [
 			'port' => new Query('parent', 'fang'),
 			'carStore' => new Query('parent', 'cheliang'),
@@ -87,7 +87,7 @@ class PortService extends TimebasedService {
 		];
 	}
 
-    public static function isPortAd($ad) {
+    public function isPortAd($ad) {
 		$portType = null;
     	foreach (self::categoryMapping() as $type => $filter) {
     		if ($filter->accept($ad->category)) {
@@ -96,10 +96,10 @@ class PortService extends TimebasedService {
     		}
     	}
     	if (!$portType) return false;
-    	return self::isOnService($ad->user->id, $portType, $ad->city->englishName);
+    	return $this->activeService($ad->user->id, $portType, $ad->city->englishName);
     }
 
-    public static function isOnService($userId, $type = null, $cityEnglishName = null) {
+    public function activeService($userId, $type = null, $cityEnglishName = null) {
 		$q = new AndQuery(
 				self::activeQuery()
 				,new Query('user', $userId)
@@ -108,7 +108,7 @@ class PortService extends TimebasedService {
 		//todo: replace cityEnglishName with area when refactor.
 		if ($cityEnglishName) $q->add(new Query('cityEnglishName', $cityEnglishName));
 		$s = Searcher::query('Service', $q);
-		return $s->totalCount() > 0 ? $s->objs()[0]->type : false;
+		return $s->totalCount() > 0 ? $s->objs()[0] : null;
     }
 
 	protected function allowedFields() {
@@ -126,7 +126,7 @@ class DingService extends TimebasedService {
 
 	private static $types = ['ding', 'dingKeyword', 'dingAll', 'dingProvince'];
 
-	public static function ads($category, $area, $args) {
+	public function ads($category, $area, $args) {
 		include_once('./lib/Listing.php');
 		
 		$areas = Util::object_map($area->path(), 'id');
@@ -160,14 +160,14 @@ class DingService extends TimebasedService {
 		return $ads;
 	}
 
-    public static function isOnService($ad) {
+    public function activeService($ad) {
 		$q = new AndQuery(
 				self::activeQuery()
 				,new InQuery('type', self::$types)
 				,new Query('ad', $ad->id)
 			);
 		$s = Searcher::query('Service', $q);
-		return $s->totalCount() > 0;
+		return $s->totalCount() > 0 ? $s->objs()[0] : null;
     }
 
 	protected function allowedFields() {

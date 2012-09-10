@@ -7,9 +7,9 @@ class User_Controller {
 
 		$user = graph($user_id);
 
-		Service::factory('Port');
-		if (($port_type = PortService::isOnService($user->id))) {
-			$portFilter = PortService::categoryMapping()[$port_type];
+		$portService = Service::factory('Port');
+		if (($port = $portService->activeService($user->id))) {
+			$portFilter = $portService->categoryMapping()[$port->type];
 			$content = new View('user/port', compact('user', 'portFilter'));
 		} else {
 			$content = new View('user/normal', compact('user'));
