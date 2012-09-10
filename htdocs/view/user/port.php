@@ -66,7 +66,7 @@
 		<ul class="list" id="listingHead">
 			<?php
 			foreach ($user->ad() as $ad) {
-				if (in_array($ad->categoryFirstLevelEnglishName, $port_category)) {
+				if ($portFilter->accept($ad->category)) {
 			?>
 			<li class="list-item clearfix">
 				<span class="list-item-block"><time><?=date('m月d日', $ad->createdTime)?></time></span>
