@@ -47,7 +47,7 @@ class Searcher {
 		$params = array_merge($params, $options);
 		$params['size'] = min(max($params['size'], 1), 1000);
 		$params['from'] = min(max($params['from'], 0), 10000);
-		$response = self::read(self::locate($type) . "/_search/", $params);
+		$response = self::read(self::locate($type) . "_search/", $params);
 		return new SearchResult($response);
 	}
 
@@ -58,9 +58,9 @@ class Searcher {
 	private static function locate($type){
 		$mapping = Config::get("env.searcher.mapping");
 		if (isset($mapping[$type])) {
-			return "{$mapping[$type]}/{$type}";
+			return "{$mapping[$type]}/{$type}/";
 		} else {
-			return "default/{$type}";
+			return "default/{$type}/";
 		}
 	} 
 	

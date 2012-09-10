@@ -39,7 +39,7 @@ class PathConnection extends Connection {
 
 	public function find($node, $null) {
 		$parent = $this->config;
-		if(!isset($node->$parent)) {
+		if(empty($node->$parent)) {
 			return array($node);
 		}
 		//path成为了一个强制的Conn Name，感觉不太好。

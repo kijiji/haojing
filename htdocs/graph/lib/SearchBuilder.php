@@ -68,6 +68,18 @@ class SearchBuilder extends Data {
 		}
 	}
 	
+	public static function buildOne($id) {
+		$node = new Node($id);
+		try {
+			$node->load();
+			$builder = new self($node->type());
+			Searcher::index($node->type(), $builder->buildDoc($node));
+		} catch (Exception $exc) {
+			file_put_contents(LOG_DIR . '/es_build_error.log', $exc->getMessage() . "\n", FILE_APPEND);
+		}
+	}
+
+
 	private function logFile() {
 		return LOG_DIR . "/last_{$this->type}.log";
 	}
@@ -134,9 +146,16 @@ class AdDoc extends NodeDoc {
 	public static function buildDoc($ad) {
 		$doc = parent::buildDoc($ad);
 		$area = $ad->area ?: graph($ad->city->objectId);
-		$doc['areas'] = join(' ', Util::object_map($area->path(), 'id'));
-		$doc['categories'] = join(' ', [$ad->categoryFirstLevelEnglishName, $ad->categoryEnglishName]);
+		if($area) $doc['areas'] = join(' ', Util::object_map($area->path(), 'id'));
+		//$doc['categories'] = join(' ', [$ad->categoryFirstLevelEnglishName, $ad->categoryEnglishName]);
 		return $doc;
 	}
 }
 
+class UserDoc extends NodeDoc {
+	public static function buildDoc($node) {
+		$doc = parent::buildDoc($node);
+		unset($doc['password']);	//不能索引密码字段
+		return $doc;
+	}
+}
