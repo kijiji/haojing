@@ -2,8 +2,7 @@
 
 class Listing {
 	public static function ding($category, $area, $args) {
-		Service::factory('DingService');
-		return DingService::ads($category, $area, $args);
+		return Service::factory('Ding')->ads($category, $area, $args);
 	}
 
 	public static function search($category, $area, $args, $appendQuery = null) {

@@ -89,8 +89,8 @@ class SearchBuilder extends Data {
 
 	private function buildDoc($node) {
 		$className = $node->type() . 'Doc';
-		if (class_exists($className)) return $className::buildDoc($node);
-		else return NodeDoc::buildDoc($node);
+		if (class_exists($className)) return $className::build($node);
+		else return NodeDoc::build($node);
 	}
 
 }
@@ -115,7 +115,7 @@ class Locker {
 }
 
 class NodeDoc {
-	public static function buildDoc($node) {
+	public static function build($node) {
 		$doc = [];
 		foreach ($node as $name => $value) {
 			if ($value instanceof Node) {
@@ -131,8 +131,25 @@ class NodeDoc {
 }
 
 class AdDoc extends NodeDoc {
-	public static function buildDoc($ad) {
-		$doc = parent::buildDoc($ad);
+	public static function build($ad) {
+		$doc = parent::build($ad);
+		$tags = $entities = [];
+		foreach ($doc as $key => $value) {
+			if (mb_strlen($key, 'utf8') == strlen($key)) continue;
+			$node = new Node($value);
+			try {
+				if ($node->type() != 'Entity') continue;
+			} catch (Exception $e) {
+				$tags[] = $value;
+				continue;
+			}
+			$path = array_slice($node->load()->path(), 1);
+			$tags = array_merge($tags, Util::object_map($path, 'name'));
+			$entities = array_merge($entities, Util::object_map($path, 'id'));
+		}
+		$doc['tags'] = join(' ', array_map(function($v){return str_replace(' ', '', $v);}, $tags));
+		$doc['entities'] = join(' ', $entities);
+		
 		$area = $ad->area ?: graph($ad->city->objectId);
 		$doc['areas'] = join(' ', Util::object_map($area->path(), 'id'));
 		$doc['categories'] = join(' ', [$ad->categoryFirstLevelEnglishName, $ad->categoryEnglishName]);
