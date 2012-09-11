@@ -139,13 +139,13 @@ class AdDoc extends NodeDoc {
 			$node = new Node($value);
 			try {
 				if ($node->type() != 'Entity') continue;
+				$path = array_slice($node->load()->path(), 1);
+				$tags = array_merge($tags, Util::object_map($path, 'name'));
+				$entities = array_merge($entities, Util::object_map($path, 'id'));
 			} catch (Exception $e) {
 				$tags[] = $value;
 				continue;
 			}
-			$path = array_slice($node->load()->path(), 1);
-			$tags = array_merge($tags, Util::object_map($path, 'name'));
-			$entities = array_merge($entities, Util::object_map($path, 'id'));
 		}
 		$doc['tags'] = join(' ', array_map(function($v){return str_replace(' ', '', $v);}, $tags));
 		$doc['entities'] = join(' ', $entities);
@@ -156,4 +156,3 @@ class AdDoc extends NodeDoc {
 		return $doc;
 	}
 }
-
