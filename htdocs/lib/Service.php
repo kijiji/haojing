@@ -12,9 +12,9 @@ abstract class Service {
 
 	public function init($params) {
 		if ($this->id) throw new Exception('Can not init an exist service');
-		foreach ($this->allowedFields() as $key => $required) {
+		foreach ($this->allowedFields() as $key => $validateRule) {
 			$this->$key = $params->$key;
-			if ($required && !$this->validate($required, $this->$key)) throw new Exception('need required field:' . $key);
+			if (!$this->validate($this->$key, $validateRule)) throw new Exception('need required field:' . $key);
 		}
 		$this->save();
 	}
@@ -33,13 +33,13 @@ abstract class Service {
 	}
 
 	protected function allowedFields() {
-		return ['userId' => true, 'validDays' => ['validInt', 1, 365], 'listPrice' => ['validInt', 1]];
+		return ['userId' => true, 'days' => ['validNumber', 1, 365], 'listPrice' => ['validNumber', 0]];
 	}
 
 	protected function activate($time) {
 		if ($this->startTime) throw new Exception('Already start!');
 		$this->startTime = $time;
-		$this->endTime = $this->validDays * 86400 + $time;
+		$this->endTime = $this->days * 86400 + $time;
 	}
 
 	protected static function activeQuery($time = null) {
@@ -54,7 +54,7 @@ abstract class Service {
 
 abstract class TimebasedService extends Service {
 	protected function shippedPercentage($time) {
-		if (!$this->vaildDays) throw new Exception("Service {$this->id} without validDays!");
+		if (!$this->vaildDays) throw new Exception("Service {$this->id} without days!");
 		$time = min($time, $this->cancelTime ?: $this->endTime);
 		return ceil(max(($time - $this->startTime), 0) / 86400) / $this->vaildDays;
 	}
@@ -72,13 +72,13 @@ abstract class TimebasedService extends Service {
 			$lastEndTime = max($lastEndTime, $service->cancelTime ?: $service->endTime);
 		}
 		$this->startTime = $lastEndTime;
-		$this->endTime = $this->validDays * 86400 + $lastEndTime;
+		$this->endTime = $this->days * 86400 + $lastEndTime;
 	}
 }
 
 class PortService extends TimebasedService {
 
-	public static function categoryMapping() {
+	public function categoryMapping() {
 		return [
 			'port' => new Query('parent', 'fang'),
 			'carStore' => new Query('parent', 'cheliang'),
@@ -87,7 +87,7 @@ class PortService extends TimebasedService {
 		];
 	}
 
-    public static function isPortAd($ad) {
+    public function isPortAd($ad) {
 		$portType = null;
     	foreach (self::categoryMapping() as $type => $filter) {
     		if ($filter->accept($ad->category)) {
@@ -96,10 +96,10 @@ class PortService extends TimebasedService {
     		}
     	}
     	if (!$portType) return false;
-    	return self::isOnService($ad->user->id, $portType, $ad->city->englishName);
+    	return $this->activeService($ad->user->id, $portType, $ad->city->englishName);
     }
 
-    public static function isOnService($userId, $type = null, $cityEnglishName = null) {
+    public function activeService($userId, $type = null, $cityEnglishName = null) {
 		$q = new AndQuery(
 				self::activeQuery()
 				,new Query('user', $userId)
@@ -108,7 +108,7 @@ class PortService extends TimebasedService {
 		//todo: replace cityEnglishName with area when refactor.
 		if ($cityEnglishName) $q->add(new Query('cityEnglishName', $cityEnglishName));
 		$s = Searcher::query('Service', $q);
-		return $s->totalCount() > 0;
+		return $s->totalCount() > 0 ? $s->objs()[0] : null;
     }
 
 	protected function allowedFields() {
@@ -126,7 +126,7 @@ class DingService extends TimebasedService {
 
 	private static $types = ['ding', 'dingKeyword', 'dingAll', 'dingProvince'];
 
-	public static function ads($category, $area, $args) {
+	public function ads($category, $area, $args) {
 		include_once('./lib/Listing.php');
 		
 		$areas = Util::object_map($area->path(), 'id');
@@ -160,14 +160,14 @@ class DingService extends TimebasedService {
 		return $ads;
 	}
 
-    public static function isOnService($ad) {
+    public function activeService($ad) {
 		$q = new AndQuery(
 				self::activeQuery()
 				,new InQuery('type', self::$types)
 				,new Query('ad', $ad->id)
 			);
 		$s = Searcher::query('Service', $q);
-		return $s->totalCount() > 0;
+		return $s->totalCount() > 0 ? $s->objs()[0] : null;
     }
 
 	protected function allowedFields() {
@@ -214,57 +214,6 @@ trait UserAccountTrait {
 	}
 }
 
-trait DataDelegateTrait {
-	protected $data;
-
-	public function __construct($data = null) {
-		if ($data) $this->bind($data);
-	}
-	
-	public function bind($data) {
-		$this->data = $data;
-	}
-
-	public function __get($name) {
-		if (!$this->data) throw new Exception('Need bind data first!');
-		return $this->data->$name;
-	}
-
-	public function __set($name, $value) {
-		if (!$this->data) throw new Exception('Need bind data first!');
-		return $this->data->$name = $value;
-	}
-
-	public function __call($name, $args) {
-		if (!$this->data) throw new Exception('Need bind data first!');
-		return call_user_func_array(array($this->data, $name), $args);
-	}
-}
-
-trait ValidatorTrait {
-	//todo: implement errors and message.
-
-	protected function validate($exp, $value) {
-		if (is_array($exp) && !call_user_func_array(['self', $exp[0]], array_merge([$value], array_slice($exp, 1))))
-			return false;
-		elseif ($exp && is_null($this->$key))
-			return false;
-		return true;
-	}
-
-	protected static function validInt($value, $min = null, $max = null) {
-		return is_numeric($value) && (is_null($min) ? true : $value >= $min) && (is_null($max) ? true : $value <= $max);
-	}
-
-	protected static function validMobile($value) {
-		return preg_match('/^1(3|4|5|8)\d{9}$/', $value);
-	}
-
-	protected static function validStringLength($value, $min = null, $max = null) {
-		return self::validInt(mb_strlen($value, 'utf8'), $min, $max);
-	}
-}
-
 trait AccrualBasedAccountingTrait {
 	public function occuredRevenue($time) {
 		return intval($this->price * $this->shippedPercentage($time)) / 100;
@@ -292,12 +241,5 @@ class CompanyAccount {
 		}
 
 		return $money;
-	}
-}
-
-//todo: put in Haojing' util dir
-class Util {
-	public static function object_map($arrayOfObjects, $key) {
-		return array_map(function($o) use ($key) {return $o->$key;}, $arrayOfObjects);
 	}
 }
