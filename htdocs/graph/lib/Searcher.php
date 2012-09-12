@@ -38,6 +38,7 @@ class Searcher {
 	 * @return @type SearchResult
 	 */	
 	public static function query($type, $query, $options = []) {
+		if (is_string($query)) $query = QueryParser::parse($query);
 		$params = array(
 			'from'	=>	0,
 			'size'	=>	10,

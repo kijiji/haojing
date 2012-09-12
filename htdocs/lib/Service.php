@@ -44,11 +44,8 @@ abstract class Service {
 
 	protected static function activeQuery($time = null) {
 		if (!$time) $time = time();
-		return new AndQuery(
-				new RangeQuery('startTime', null, $time + 1),
-				new RangeQuery('endTime', $time, null),
-				new NotQuery(new RangeQuery('cancelTime', null, $time + 1))
-			);
+		$_time = $time + 1;
+		return "startTime:[,{$_time}] endTime:[{$time},] -cancelTime:[,{$_time}]";
 	}
 }
 
@@ -62,11 +59,7 @@ abstract class TimebasedService extends Service {
 	abstract protected function subjectQuery();
 
 	protected function activate($time) {
-		$s = Searcher::query('Service', new AndQuery(
-				$this->subjectQuery(),
-				new Query('type', $this->type),
-				new RangeQuery('endTime', $time)
-			));
+		$s = Searcher::query('Service', $this->subjectQuery() . " type:{$this->type} endTime:[{$time},]");
 		$lastEndTime = 0;
 		foreach ($s as $service) {
 			$lastEndTime = max($lastEndTime, $service->cancelTime ?: $service->endTime);
@@ -87,38 +80,34 @@ class PortService extends TimebasedService {
 		];
 	}
 
-    public function isPortAd($ad) {
+	public function isPortAd($ad) {
 		$portType = null;
-    	foreach (self::categoryMapping() as $type => $filter) {
-    		if ($filter->accept($ad->category)) {
-    			$portType = $type;
-    			break;
-    		}
-    	}
-    	if (!$portType) return false;
-    	return $this->activeService($ad->user->id, $portType, $ad->city->englishName);
-    }
+		foreach (self::categoryMapping() as $type => $filter) {
+			if ($filter->accept($ad->category)) {
+				$portType = $type;
+				break;
+			}
+		}
+		if (!$portType) return false;
+		return $this->activeService($ad->user->id, $portType, $ad->city->englishName);
+	}
 
-    public function activeService($userId, $type = null, $cityEnglishName = null) {
-		$q = new AndQuery(
-				self::activeQuery()
-				,new Query('user', $userId)
-			);
-		if ($type) $q->add(new Query('type', $type));
+	public function activeService($userId, $type = null, $cityEnglishName = null) {
+		$q = self::activeQuery() . " user:{$userId}";
+		if ($type) $q .= " type:{$type}";
 		//todo: replace cityEnglishName with area when refactor.
-		if ($cityEnglishName) $q->add(new Query('cityEnglishName', $cityEnglishName));
+		if ($cityEnglishName) $q .= " cityEnglishName:{$cityEnglishName}";
 		$s = Searcher::query('Service', $q);
 		return $s->totalCount() > 0 ? $s->objs()[0] : null;
-    }
+	}
 
 	protected function allowedFields() {
 		return ['area' => true] + parent::allowfields();
 	}
-	
-	protected function subjectQuery() {
-		return new Query('userId', $this->userId);
-	}
 
+	protected function subjectQuery() {
+		return "userId:{$this->userId}";
+	}
 }
 
 class DingService extends TimebasedService {
@@ -127,15 +116,8 @@ class DingService extends TimebasedService {
 	private static $types = ['ding', 'dingKeyword', 'dingAll', 'dingProvince'];
 
 	public function ads($category, $area, $args) {
-		include_once('./lib/Listing.php');
-		
 		$areas = Util::object_map($area->path(), 'id');
-		$q = new AndQuery(
-				self::activeQuery()
-				,new InQuery('type', self::$types)
-				,new Query('category', $category->id)
-				,new InQuery('area', $areas)
-			);
+		$q = self::activeQuery() . " category:{$category->id} type:{" . join(',', self::$types) . "} area:{" . join(',', $areas) . "}";
 		$s = Searcher::query('Service', $q);
 
 		//todo: need refactor when switch write.
@@ -145,10 +127,10 @@ class DingService extends TimebasedService {
 				$ads[] = $service->ad;
 				continue;
 			} elseif ($service->type == 'dingKeyword') {
-				if (!in_array($service->tag->type, ['area2', 'area3']) && !in_array($service->tag->id, $args) && 
+				if (!in_array($service->tag->type, ['area2', 'area3']) && !in_array($service->tag->id, $args) &&
 					(
-						!$service->tag->children || 
-						!array_intersect($service->tag->children, $args) //only support 2 level tags
+						!$service->tag->children ||
+							!array_intersect($service->tag->children, $args) //only support 2 level tags
 					)
 				)
 					continue;
@@ -156,19 +138,14 @@ class DingService extends TimebasedService {
 			$adIds[] = $service->ad->id;
 		}
 
-		$ads += Listing::search($category, $area, $args, new InQuery('id', $adIds))->objs();//use Listing::search to re-check
+		$ads += Listing::search($category, $area, $args, "id:{" . join(',', $adIds) . "}")->objs();//use Listing::search to re-check
 		return $ads;
 	}
 
-    public function activeService($ad) {
-		$q = new AndQuery(
-				self::activeQuery()
-				,new InQuery('type', self::$types)
-				,new Query('ad', $ad->id)
-			);
-		$s = Searcher::query('Service', $q);
+	public function activeService($ad) {
+		$s = Searcher::query('Service', self::activeQuery() . " ad:{$ad->id} type:{" . join(',', self::$types) . "}");
 		return $s->totalCount() > 0 ? $s->objs()[0] : null;
-    }
+	}
 
 	protected function allowedFields() {
 		return ['adId' => true, 'category' => true, 'area' => true, 'tag' => false] + parent::allowfields();
@@ -187,7 +164,7 @@ trait BiddingPriceTrait {
 
 trait UserAccountTrait {
 	private $balance, $ratio;
-	
+
 	public function in($money, $credit) {
 		$this->ratio = $money + ($this->balance * $this->ratio) / ($this->balance + $money + $credit);
 		$this->balance += $money + $credit;
@@ -226,14 +203,10 @@ class CompanyAccount {
 	public static function occuredRevenue($startTime, $endTime) {
 		$money = 0;
 
-		if ($endTime > time()) 
+		if ($endTime > time())
 			throw new Exception("Refuse to tell you future, because that may be inaccurate");
 
-		$q = new AndQuery(
-				new RangeQuery('startTime', null, $endTime)
-				,new RangeQuery('endTime', $startTime - 1, null)
-			);
-		$s = Searcher::query('Service', $q);
+		$s = Searcher::query('Service', "startTime:[,{$endTime}] endTime:[" . ($startTime - 1) . ",]");
 
 		foreach ($s->objs() as $serviceData) {
 			$service = Service::factory(ucfirst($serviceData->type), $serviceData);

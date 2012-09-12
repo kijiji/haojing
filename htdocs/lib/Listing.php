@@ -6,7 +6,10 @@ class Listing {
 		return DingService::ads($category, $area, $args);
 	}
 
-	public static function search($category, $area, $args, $appendQuery = null) {
+	public static function search($category, $area, $args, string $appendQuery = null) {
+		$query = "category:{$category->id} areas:{$area->id} status:0";
+		if ($appendQuery) $query .= " {$appendQuery}";
+		$query = QueryParser::parse($query);//todo: fix when merge the prev pull request.
 		$query = new AndQuery(
 			new Query('category', $category->id)
 			,new Query('areas', $area->id)
