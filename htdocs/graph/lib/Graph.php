@@ -50,5 +50,14 @@ class Node extends Data {
 	public function connections() {
 		return Config::get("type.{$this->type()}.conn");
 	}
+
+	public static function getType($id) {
+		$o = new Data($id);
+		try {
+			return $o->type();
+		} catch (Exception $e) {
+			return null;
+		}
+	}
 }
 

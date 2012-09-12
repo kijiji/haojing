@@ -21,17 +21,12 @@ class Listing {
 		$opts = array_intersect_key($args, $allowedOptions);
 		$args = array_diff_key($args, $allowedOptions);
 		foreach ($args as $field => $value) {
-			//todo: may figure out a better way of "_i"
 			if (preg_match('/^\[(\d*),(\d*)\]$/', $value, $m)) {
+				//todo: may figure out a better way of "_i"
 				$query->add(new RangeQuery($field . '_i', $m[1] ?: null, $m[2] ?: null));
+			} elseif (Node::getType($value) == 'Entity') {
+				$query->add(new Query('Entities', $value));
 			} else {
-				try {
-					$node = new Node($value);
-					if ($node->type() == 'Entity') {
-						$query->add(new Query('Entities', $value));
-						continue;
-					}
-				} catch (Exception $e) {}
 				$query->add(new Query($field, $value));
 			}
 		}
