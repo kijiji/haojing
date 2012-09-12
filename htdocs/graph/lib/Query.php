@@ -19,7 +19,8 @@ class Query {
 	}
 
 	function accept($o) {
-		return (is_scalar($o->{$this->field}) ?: $o->{$this->field}->id) == $this->value;
+		if (is_null($o->{$this->field})) return false;
+		return (is_scalar($o->{$this->field}) ? $o->{$this->field} : $o->{$this->field}->id) == $this->value;
 	}
 }
 
@@ -108,6 +109,10 @@ class NotQuery extends AndQuery {
 		}
 		return $arr;
 	}
+
+	function accept($o) {
+		return !parent::accept($o);
+	}
 }
 
 class OrQuery extends AndQuery {
@@ -144,6 +149,13 @@ class InQuery extends OrQuery {
 		}
 		return $arr;
 	}
+
+	function accept($o) {
+		foreach ($this->values as $value) {
+			$this->add(new Query($this->field, $value));
+		}
+		return parent::accept($o);
+	}
 }
 
 
@@ -155,7 +167,7 @@ class InQuery extends OrQuery {
 
 class QueryParser {
 	public static function parse($HJQueryString) {
-		$str = preg_replace('/\s+/', ' ', $HJQueryString);
+		$str = preg_replace('/\s+/', ' ', trim($HJQueryString));
 		//var_dump($str);
 
 		$RPNStack = self::buildRPNStack($str);
@@ -231,7 +243,7 @@ class QueryParser {
 						}
 						array_push($opStack, $m['op']);
 				}
-			} elseif (preg_match('/^((?<key>[^\:\(\)]+)\s*\:?\s*([\"\'](?<value>[^\"\'\(\)]+)[\"\']|(?<value2>[^\s\(\)]+))).*$/i', $currentStr, $m)) {
+			} elseif (preg_match('/^(((?<key>[^\:\(\)]+)\s*\:)?\s*([\"\'](?<value>[^\"\'\(\)]+)[\"\']|(?<value2>[^\s\(\)]+))).*$/i', $currentStr, $m)) {
 				//var_dump($m[1]);
 				$RPNStack[] = ['key' => $m['key'], 'value' => $m['value'] ?: $m['value2']];
 				$i += (mb_strlen($m[1]) - 1);
