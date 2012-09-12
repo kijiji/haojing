@@ -180,7 +180,7 @@ class QueryParser {
 				if (preg_match('/^\[(?<lower>\d*),(?<upper>\d*)\]$/', $item['value'], $m)) {
 					$query = new RangeQuery($item['key'], $m['lower'] == '' ? null : $m['lower'], $m['upper'] == '' ? null : $m['upper']);
 				} elseif (preg_match('/^\{(([\"\']?[^\"\'\,]+[\"\'\,]*)+)\}$/', $item['value'], $m)) {
-					$values = array_map(function ($o) {return trim($o, '"\'');}, explode(',', $m[1]));
+					$values = array_map(function ($o) {return preg_replace('/^(\"|\')(.*?)\1$/', "$2", $o);}, explode(',', $m[1]));
 					$query = new InQuery($item['key'], $values);
 				} else {
 					$query = new Query($item['key'], $item['value']);
@@ -250,13 +250,7 @@ class QueryParser {
 			}
 		}
 
-		if (count($opStack)) {
-			do {
-				$RPNStack[] = $op = array_pop($opStack);
-				if (is_null($op)) array_pop($RPNStack);
-			} while (!is_null($op));
-		}
-		unset($opStack);
+		if (count($opStack)) $RPNStack = array_merge($RPNStack, array_reverse($opStack));
 		return $RPNStack;
 	}
 }
