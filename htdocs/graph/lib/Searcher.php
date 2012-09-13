@@ -77,22 +77,8 @@ class Searcher {
 	}
 	
 	private static function request($uri, $params = [], $type = 'read') {
-		$cUrl = curl_init();
 		$url = Config::get("env.searcher.cluster") . $uri;
-		curl_setopt($cUrl, CURLOPT_URL, $url);
-		curl_setopt($cUrl, CURLOPT_RETURNTRANSFER, TRUE);
-		curl_setopt($cUrl, CURLOPT_HEADER, FALSE);
-		curl_setopt($cUrl, CURLOPT_FOLLOWLOCATION, FALSE);
-		curl_setopt($cUrl, CURLOPT_CUSTOMREQUEST, 'POST');
-		curl_setopt($cUrl, CURLOPT_POSTFIELDS, json_encode($params, JSON_UNESCAPED_UNICODE));
-		curl_setopt($cUrl, CURLOPT_TIMEOUT, ($type = 'read' ? self::READ_TIMEOUT : self::WRITE_TIMEOUT) + 1);
-		curl_setopt($cUrl, CURLOPT_CONNECTTIMEOUT, 0);
-		$body = curl_exec($cUrl);
-		$info = curl_getinfo($cUrl);
-		if ( !in_array($info['http_code'], array(200, 201)) || (curl_error($cUrl) != '') ) {
-			$body = FALSE;
-		}
-		curl_close($cUrl);
+		$body = Http::postUrl($url, json_encode($params, JSON_UNESCAPED_UNICODE), ($type = 'read' ? self::READ_TIMEOUT : self::WRITE_TIMEOUT) + 1);
 		return json_decode($body);
 	}
 }

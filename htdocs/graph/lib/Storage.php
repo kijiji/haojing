@@ -204,6 +204,13 @@ class MobileNumberStorage extends Storage implements ReadableStorage {
 	}
 }
 
+class CounterStorage extends Storage implements ReadableStorage {
+	public function load($id) {
+		$res = Http::getUrl("http://counter.baixing.net/c.php?id={$id}&noadd=1", 1);
+		return ['count' => (preg_match('/(\d+)\)$/', $res, $m)) ? $m[1] : 0];
+	}
+}
+
 class ImageStorage extends Storage implements ReadableStorage {
 	public function load($img) {
 		list($img_id, $type) = explode('.',  $img);
