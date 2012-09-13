@@ -26,3 +26,9 @@ git clone --recursive git://github.com/baixing/haojing.git
 推荐每个人都fork一份代码，然后在自己的repo里面做分支开发。  
 当开发完毕需要上线的时候，先提交pull request到项目主干，同时指派给别人做review code。  
 code review没通过的不准合并进主干上线。  
+
+
+关于命令行工具：
+为了方便大家写脚本或者测试代码，镐京提供了命令行脚本
+大家在写脚本代码的时候不用考虑类的自动加载问题
+默认设置：chmod +x /path/cli.php && ln -s /path/cli.php /usr/bin/haojing
