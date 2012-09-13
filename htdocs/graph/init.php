@@ -5,6 +5,8 @@ if( !defined('CONFIG_DIR')) {
 	define('CONFIG_DIR', __DIR__ . '/config');
 }
 
+mb_internal_encoding('UTF-8');
+
 define('LOG_DIR', '/home/logs');
 define('TEMP_DIR', '/tmp');
 
