@@ -3,7 +3,7 @@
 //yubing@baixing.com
 //recommend setup: chmod +x /path/cli.php && ln -s /path/cli.php /usr/bin/haojing
 
-include(__DIR__ . '/init.php');
+include(__DIR__ . '/htdocs/init.php');
 
 function usage() {
 	echo "# Run php with haojing libs #\n";

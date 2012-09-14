@@ -28,11 +28,7 @@ class SearchBuilder extends Data {
 	}
 	
 	public function buildAll(){
-		$key = "{$this->type}_Builder";
-		if(Locker::lock($key)) {
-			$this->build($this->getIds('getAllIds'));
-			Locker::unlock($key);
-		}
+		$this->build($this->getIds('getAllIds'));
 	}
 
 	public function buildModified($since){
@@ -105,25 +101,6 @@ class SearchBuilder extends Data {
 		else return NodeDoc::buildDoc($node);
 	}
 
-}
-
-// 单机锁
-class Locker {
-	private static $file_handlers = [];
-
-	public static function lock($key) {
-		if(isset(self::$file_handlers[$key])) return false;
-		self::$file_handlers[$key] = fopen(TEMP_DIR . '/' . $key . 'locker', 'w+');
-		return flock(self::$file_handlers[$key], LOCK_EX | LOCK_NB);	// 独占锁、非阻塞
-	}
-	
-	public static function unlock($key) {
-		if (isset(self::$file_handlers[$key])) {
-			fclose(self::$file_handlers[$key]);
-			@unlink(TEMP_DIR . '/' . $key . 'locker');
-			unset(self::$file_handlers[$key]);
-		}
-	}
 }
 
 class NodeDoc {

@@ -1,5 +1,11 @@
 <?php
 //lianghonghao@baixing.com
+
+define('PHP_CLI', '/home/php/bin/php');
+define('HTDOCS_DIR', __DIR__);
+define('TEMP_DIR', '/tmp');
+define('LOG_DIR', '/home/logs');
+
 include __DIR__ . "/graph/init.php";
 
 define('CONTROLLER_DIR', __DIR__ . "/controller");
