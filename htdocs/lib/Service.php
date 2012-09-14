@@ -12,9 +12,9 @@ abstract class Service {
 
 	public function init($params) {
 		if ($this->id) throw new Exception('Can not init an exist service');
-		foreach ($this->allowedFields() as $key => $required) {
+		foreach ($this->allowedFields() as $key => $validateRule) {
 			$this->$key = $params->$key;
-			if ($required && !$this->validate($required, $this->$key)) throw new Exception('need required field:' . $key);
+			if (!$this->validate($this->$key, $validateRule)) throw new Exception('need required field:' . $key);
 		}
 		$this->save();
 	}
@@ -33,28 +33,25 @@ abstract class Service {
 	}
 
 	protected function allowedFields() {
-		return ['userId' => true, 'validDays' => ['validInt', 1, 365], 'listPrice' => ['validInt', 1]];
+		return ['userId' => true, 'days' => ['validNumber', 1, 365], 'listPrice' => ['validNumber', 0]];
 	}
 
 	protected function activate($time) {
 		if ($this->startTime) throw new Exception('Already start!');
 		$this->startTime = $time;
-		$this->endTime = $this->validDays * 86400 + $time;
+		$this->endTime = $this->days * 86400 + $time;
 	}
 
 	protected static function activeQuery($time = null) {
 		if (!$time) $time = time();
-		return new AndQuery(
-				new RangeQuery('startTime', null, $time + 1),
-				new RangeQuery('endTime', $time, null),
-				new NotQuery(new RangeQuery('cancelTime', null, $time + 1))
-			);
+		$_time = $time + 1;
+		return new RawQuery("startTime:[,{$_time}] endTime:[{$time},] -cancelTime:[,{$_time}]");
 	}
 }
 
 abstract class TimebasedService extends Service {
 	protected function shippedPercentage($time) {
-		if (!$this->vaildDays) throw new Exception("Service {$this->id} without validDays!");
+		if (!$this->vaildDays) throw new Exception("Service {$this->id} without days!");
 		$time = min($time, $this->cancelTime ?: $this->endTime);
 		return ceil(max(($time - $this->startTime), 0) / 86400) / $this->vaildDays;
 	}
@@ -62,23 +59,22 @@ abstract class TimebasedService extends Service {
 	abstract protected function subjectQuery();
 
 	protected function activate($time) {
-		$s = Searcher::query('Service', new AndQuery(
-				$this->subjectQuery(),
-				new Query('type', $this->type),
-				new RangeQuery('endTime', $time)
-			));
+		$q = new AndQuery($this->subjectQuery());
+		$q->add(new Query('type', $this->type));
+		$q->add(new RangeQuery('endTime', $time));
+		$s = Searcher::query('Service', $q);
 		$lastEndTime = 0;
 		foreach ($s as $service) {
 			$lastEndTime = max($lastEndTime, $service->cancelTime ?: $service->endTime);
 		}
 		$this->startTime = $lastEndTime;
-		$this->endTime = $this->validDays * 86400 + $lastEndTime;
+		$this->endTime = $this->days * 86400 + $lastEndTime;
 	}
 }
 
 class PortService extends TimebasedService {
 
-	public static function categoryMapping() {
+	public function categoryMapping() {
 		return [
 			'port' => new Query('parent', 'fang'),
 			'carStore' => new Query('parent', 'cheliang'),
@@ -87,38 +83,34 @@ class PortService extends TimebasedService {
 		];
 	}
 
-    public static function isPortAd($ad) {
+	public function isPortAd($ad) {
 		$portType = null;
-    	foreach (self::categoryMapping() as $type => $filter) {
-    		if ($filter->accept($ad->category)) {
-    			$portType = $type;
-    			break;
-    		}
-    	}
-    	if (!$portType) return false;
-    	return self::isOnService($ad->user->id, $portType, $ad->city->englishName);
-    }
+		foreach (self::categoryMapping() as $type => $filter) {
+			if ($filter->accept($ad->category)) {
+				$portType = $type;
+				break;
+			}
+		}
+		if (!$portType) return false;
+		return $this->activeService($ad->user->id, $portType, $ad->city->englishName);
+	}
 
-    public static function isOnService($userId, $type = null, $cityEnglishName = null) {
-		$q = new AndQuery(
-				self::activeQuery()
-				,new Query('user', $userId)
-			);
-		if ($type) $q->add(new Query('type', $type));
+	public function activeService($userId, $type = null, $cityEnglishName = null) {
+		$q = new AndQuery(self::activeQuery(), self::subjectQuery());
+		if ($type) $q->add("type", $type);
 		//todo: replace cityEnglishName with area when refactor.
-		if ($cityEnglishName) $q->add(new Query('cityEnglishName', $cityEnglishName));
+		if ($cityEnglishName) $q->add("cityEnglishName", $cityEnglishName);
 		$s = Searcher::query('Service', $q);
-		return $s->totalCount() > 0;
-    }
+		return $s->totalCount() > 0 ? $s->objs()[0] : null;
+	}
 
 	protected function allowedFields() {
 		return ['area' => true] + parent::allowfields();
 	}
-	
-	protected function subjectQuery() {
-		return new Query('userId', $this->userId);
-	}
 
+	protected function subjectQuery() {
+		return new Query("userId", $this->userId);
+	}
 }
 
 class DingService extends TimebasedService {
@@ -126,16 +118,14 @@ class DingService extends TimebasedService {
 
 	private static $types = ['ding', 'dingKeyword', 'dingAll', 'dingProvince'];
 
-	public static function ads($category, $area, $args) {
-		include_once('./lib/Listing.php');
-		
+	public function ads($category, $area, $args) {
 		$areas = Util::object_map($area->path(), 'id');
 		$q = new AndQuery(
-				self::activeQuery()
-				,new InQuery('type', self::$types)
-				,new Query('category', $category->id)
-				,new InQuery('area', $areas)
-			);
+			self::activeQuery(),
+			new Query('category', $category->id),
+			new InQuery('type', self::$types),
+			new InQuery('area', $areas)
+		);
 		$s = Searcher::query('Service', $q);
 
 		//todo: need refactor when switch write.
@@ -145,10 +135,10 @@ class DingService extends TimebasedService {
 				$ads[] = $service->ad;
 				continue;
 			} elseif ($service->type == 'dingKeyword') {
-				if (!in_array($service->tag->type, ['area2', 'area3']) && !in_array($service->tag->id, $args) && 
+				if (!in_array($service->tag->type, ['area2', 'area3']) && !in_array($service->tag->id, $args) &&
 					(
-						!$service->tag->children || 
-						!array_intersect($service->tag->children, $args) //only support 2 level tags
+						!$service->tag->children ||
+							!array_intersect($service->tag->children, $args) //only support 2 level tags
 					)
 				)
 					continue;
@@ -160,22 +150,18 @@ class DingService extends TimebasedService {
 		return $ads;
 	}
 
-    public static function isOnService($ad) {
-		$q = new AndQuery(
-				self::activeQuery()
-				,new InQuery('type', self::$types)
-				,new Query('ad', $ad->id)
-			);
+	public function activeService($ad) {
+		$q = new AndQuery(self::activeQuery(), self::subjectQuery(), new InQuery('type', self::$types));
 		$s = Searcher::query('Service', $q);
-		return $s->totalCount() > 0;
-    }
+		return $s->totalCount() > 0 ? $s->objs()[0] : null;
+	}
 
 	protected function allowedFields() {
 		return ['adId' => true, 'category' => true, 'area' => true, 'tag' => false] + parent::allowfields();
 	}
 
 	protected function subjectQuery() {
-		return new Query('adId', $this->adId);
+		return new Query('ad', $this->ad->id);
 	}
 }
 
@@ -187,7 +173,7 @@ trait BiddingPriceTrait {
 
 trait UserAccountTrait {
 	private $balance, $ratio;
-	
+
 	public function in($money, $credit) {
 		$this->ratio = $money + ($this->balance * $this->ratio) / ($this->balance + $money + $credit);
 		$this->balance += $money + $credit;
@@ -214,57 +200,6 @@ trait UserAccountTrait {
 	}
 }
 
-trait DataDelegateTrait {
-	protected $data;
-
-	public function __construct($data = null) {
-		if ($data) $this->bind($data);
-	}
-	
-	public function bind($data) {
-		$this->data = $data;
-	}
-
-	public function __get($name) {
-		if (!$this->data) throw new Exception('Need bind data first!');
-		return $this->data->$name;
-	}
-
-	public function __set($name, $value) {
-		if (!$this->data) throw new Exception('Need bind data first!');
-		return $this->data->$name = $value;
-	}
-
-	public function __call($name, $args) {
-		if (!$this->data) throw new Exception('Need bind data first!');
-		return call_user_func_array(array($this->data, $name), $args);
-	}
-}
-
-trait ValidatorTrait {
-	//todo: implement errors and message.
-
-	protected function validate($exp, $value) {
-		if (is_array($exp) && !call_user_func_array(['self', $exp[0]], array_merge([$value], array_slice($exp, 1))))
-			return false;
-		elseif ($exp && is_null($this->$key))
-			return false;
-		return true;
-	}
-
-	protected static function validInt($value, $min = null, $max = null) {
-		return is_numeric($value) && (is_null($min) ? true : $value >= $min) && (is_null($max) ? true : $value <= $max);
-	}
-
-	protected static function validMobile($value) {
-		return preg_match('/^1(3|4|5|8)\d{9}$/', $value);
-	}
-
-	protected static function validStringLength($value, $min = null, $max = null) {
-		return self::validInt(mb_strlen($value, 'utf8'), $min, $max);
-	}
-}
-
 trait AccrualBasedAccountingTrait {
 	public function occuredRevenue($time) {
 		return intval($this->price * $this->shippedPercentage($time)) / 100;
@@ -277,14 +212,10 @@ class CompanyAccount {
 	public static function occuredRevenue($startTime, $endTime) {
 		$money = 0;
 
-		if ($endTime > time()) 
+		if ($endTime > time())
 			throw new Exception("Refuse to tell you future, because that may be inaccurate");
 
-		$q = new AndQuery(
-				new RangeQuery('startTime', null, $endTime)
-				,new RangeQuery('endTime', $startTime - 1, null)
-			);
-		$s = Searcher::query('Service', $q);
+		$s = Searcher::query('Service', new RawQuery("startTime:[,{$endTime}] endTime:[" . ($startTime - 1) . ",]"));
 
 		foreach ($s->objs() as $serviceData) {
 			$service = Service::factory(ucfirst($serviceData->type), $serviceData);
@@ -292,12 +223,5 @@ class CompanyAccount {
 		}
 
 		return $money;
-	}
-}
-
-//todo: put in Haojing' util dir
-class Util {
-	public static function object_map($arrayOfObjects, $key) {
-		return array_map(function($o) use ($key) {return $o->$key;}, $arrayOfObjects);
 	}
 }

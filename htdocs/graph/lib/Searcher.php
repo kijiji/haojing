@@ -12,7 +12,7 @@ class SearchResult implements IteratorAggregate {
 			}
 		}
 	}
-	
+
 	public function ids() {
 		return $this->ids;
 	}
@@ -20,7 +20,7 @@ class SearchResult implements IteratorAggregate {
 	public function objs() {
 		return Node::multiLoad($this->ids);
 	}
-	
+
 	public function totalCount() {
 		return $this->totalCount;
 	}
@@ -36,7 +36,7 @@ class Searcher {
 
 	/**
 	 * @return @type SearchResult
-	 */	
+	 */
 	public static function query($type, $query, $options = []) {
 		$params = array(
 			'from'	=>	0,
@@ -54,7 +54,7 @@ class Searcher {
 	public static function index($type, $doc) {
 		return self::write(self::locate($type), $doc);
 	}
-	
+
 	private static function locate($type){
 		$mapping = Config::get("env.searcher.mapping");
 		if (isset($mapping[$type])) {
@@ -62,8 +62,8 @@ class Searcher {
 		} else {
 			return "default/{$type}";
 		}
-	} 
-	
+	}
+
 	private static function read($uri, $params) {
 		$params['timeout']	= self::READ_TIMEOUT . 's';
 		return self::request($uri, $params, 'read');
@@ -74,24 +74,10 @@ class Searcher {
 		$params['replication ']	= 'async';
 		return self::request($uri, $params, 'write');
 	}
-	
+
 	private static function request($uri, $params = [], $type = 'read') {
-		$cUrl = curl_init();
 		$url = Config::get("env.searcher.cluster") . $uri;
-		curl_setopt($cUrl, CURLOPT_URL, $url);
-		curl_setopt($cUrl, CURLOPT_RETURNTRANSFER, TRUE);
-		curl_setopt($cUrl, CURLOPT_HEADER, FALSE);
-		curl_setopt($cUrl, CURLOPT_FOLLOWLOCATION, FALSE);
-		curl_setopt($cUrl, CURLOPT_CUSTOMREQUEST, 'POST');
-		curl_setopt($cUrl, CURLOPT_POSTFIELDS, json_encode($params, JSON_UNESCAPED_UNICODE));
-		curl_setopt($cUrl, CURLOPT_TIMEOUT, ($type = 'read' ? self::READ_TIMEOUT : self::WRITE_TIMEOUT) + 1);
-		curl_setopt($cUrl, CURLOPT_CONNECTTIMEOUT, 0);
-		$body = curl_exec($cUrl);
-		$info = curl_getinfo($cUrl);
-		if ( !in_array($info['http_code'], array(200, 201)) || (curl_error($cUrl) != '') ) {
-			$body = FALSE;
-		}
-		curl_close($cUrl);
+		$body = Http::postUrl($url, json_encode($params, JSON_UNESCAPED_UNICODE), ($type = 'read' ? self::READ_TIMEOUT : self::WRITE_TIMEOUT) + 1);
 		return json_decode($body);
 	}
 }
