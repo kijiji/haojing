@@ -13,13 +13,13 @@ class Data {
 	//Loaded的对象所有属性都是public的，就不应该还有调这个方法的了。
 	public function __get($name) {
 		if (!$this->loaded) {
-			$this->load();	
+			$this->load();
 			return isset($this->$name) ? $this->$name : null;
 		} else {
 			return null;	//loaded的对象身上还没有的属性一定不存在
 		}
 	}
-	
+
 	public function load($id = null) {
 		if ($id) {
 			$this->id = $id;
@@ -64,11 +64,11 @@ class Data {
 						$gid = $this->gid($_id, $config['type']);
 						$_nodes[] = new $class($gid);
 					}
-					unset($this->$config['col']);
+					if ($config['col'] != 'id') unset($this->$config['col']);
 					$this->$refName = $_nodes;
 				} else {
 					$gid = $this->gid($this->$config['col'], $config['type']);
-					unset($this->$config['col']);
+					if ($config['col'] != 'id') unset($this->$config['col']);
 					$this->$refName = new $class($gid);
 				}
 			}
