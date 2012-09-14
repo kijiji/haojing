@@ -13,3 +13,4 @@ sftp-config.json
 htdocs/sandbox/*
 htdocs/graph/config/env.php
 htdocs/graph/config/routing.php
+htdocs/view/compiledTpl
