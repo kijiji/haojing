@@ -96,7 +96,7 @@ class PortService extends TimebasedService {
 	}
 
 	public function activeService($userId, $type = null, $cityEnglishName = null) {
-		$q = new AndQuery(self::activeQuery(), self::subjectQuery());
+		$q = new AndQuery(self::activeQuery(), new Query('user', $userId));
 		if ($type) $q->add("type", $type);
 		//todo: replace cityEnglishName with area when refactor.
 		if ($cityEnglishName) $q->add("cityEnglishName", $cityEnglishName);
@@ -109,7 +109,7 @@ class PortService extends TimebasedService {
 	}
 
 	protected function subjectQuery() {
-		return new Query("userId", $this->userId);
+		return new Query("user", $this->userId);
 	}
 }
 
@@ -118,7 +118,8 @@ class DingService extends TimebasedService {
 
 	private static $types = ['ding', 'dingKeyword', 'dingAll', 'dingProvince'];
 
-	public function ads($category, $area, $args) {
+	public function ads($category, $args, $opts) {
+		$area = graph($args['area']);
 		$areas = Util::object_map($area->path(), 'id');
 		$q = new AndQuery(
 			self::activeQuery(),
@@ -146,12 +147,13 @@ class DingService extends TimebasedService {
 			$adIds[] = $service->ad->id;
 		}
 
-		$ads += Listing::search($category, $area, $args, new InQuery('id', $adIds))->objs();//use Listing::search to re-check
+		$args['id'] = '{' . join(',', $adIds) . '}';
+		$ads += Listing::ads($category, $args, $opts);//use Listing::search to re-check
 		return $ads;
 	}
 
-	public function activeService($ad) {
-		$q = new AndQuery(self::activeQuery(), self::subjectQuery(), new InQuery('type', self::$types));
+	public function activeService($adId) {
+		$q = new AndQuery(self::activeQuery(), new Query('ad', $adId), new InQuery('type', self::$types));
 		$s = Searcher::query('Service', $q);
 		return $s->totalCount() > 0 ? $s->objs()[0] : null;
 	}
