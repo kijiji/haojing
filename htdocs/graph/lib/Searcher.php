@@ -3,14 +3,16 @@
 
 class SearchResult implements IteratorAggregate {
 	private $ids = [];
-	private $totalCount;
-	public function __construct($response) {
+	private $totalCount, $size, $from;
+	public function __construct($response, $params) {
 		if ($response != null && $response->hits->total != 0) {
 			$this->totalCount = $response->hits->total;
 			foreach ($response->hits->hits as $doc) {
 				$this->ids[$doc->_id] = $doc->_id;
 			}
 		}
+		$this->size = $params['size'];
+		$this->from = $params['from'];
 	}
 
 	public function ids() {
@@ -19,6 +21,14 @@ class SearchResult implements IteratorAggregate {
 
 	public function objs() {
 		return Node::multiLoad($this->ids);
+	}
+
+	public function prevPage() {
+		return $this->from ? ['size' => $this->size, 'from' => max($this->size - $this->from, 0)] : null;
+	}
+
+	public function nextPage() {
+		return $this->totalCount > ($this->size + $this->from) ? ['size' => $this->size, 'from' => $this->size + $this->from] : null;
 	}
 
 	public function totalCount() {
@@ -34,6 +44,14 @@ class Searcher {
 	const READ_TIMEOUT = 2;
 	const WRITE_TIMEOUT = 30;
 
+	private static $facetTypes = [
+		'terms' => ['field' => true, 'size' => false],
+		'range' => ['field' => true, 'ranges' => true],
+		'histogram' => ['field' => true, 'interval' => true],
+		'date_histogram' => ['field' => true, 'interval' => true],
+		//'geo_distance' => ['pin.location' => true, 'ranges' => true],
+	];
+
 	/**
 	 * @return @type SearchResult
 	 */
@@ -48,7 +66,32 @@ class Searcher {
 		$params['size'] = min(max($params['size'], 1), 1000);
 		$params['from'] = min(max($params['from'], 0), 10000);
 		$response = self::read(self::locate($type) . "/_search/", $params);
-		return new SearchResult($response);
+		return new SearchResult($response, $params);
+	}
+
+	public static function facet($type, $query, $options) {
+		$params = ['query' => $query->esQuery(), 'size' => 0];
+
+		$facetType = isset($options['type']) && isset(self::$facetTypes[$options['type']]) ? $options['type'] : 'terms';
+		$allowParams = self::$facetTypes[$facetType];
+
+		$params['facets']['facet'][$facetType] = [];
+		foreach ($allowParams as $key => $required) {
+			if (isset($options[$key])){
+				$params['facets']['facet'][$facetType][$key] = $options[$key];
+			} elseif ($required) {
+				throw new Exception("Need option:'{$key}' to get a {$facetType} facet");
+			}
+		}
+
+		$response = self::read(self::locate($type) . "/_search/", $params);
+		$result = [];
+		if (isset($response->facets->facet->$facetType) && is_array($response->facets->facet->$facetType)) {
+			foreach ($response->facets->facet->$facetType as $term) {
+				$result[$term->term] = $term->count;
+			}
+		}
+		return $result;
 	}
 
 	public static function index($type, $doc) {
