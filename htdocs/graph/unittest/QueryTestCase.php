@@ -8,6 +8,7 @@ class QueryTestCase extends PHPUnit_Framework_TestCase {
 	 */
 	public function testQueryParser($HJQuery, $o, $res) {
 		$q = QueryParser::parse($HJQuery);
+		//todo: figure out a clear way to test without use method accept.
 		$this->assertEquals($q->accept($o), $res, "fall: \n{$HJQuery} not accept : \n" . print_r($o, true) . "\n" . print_r($q, true));
 	}
 
