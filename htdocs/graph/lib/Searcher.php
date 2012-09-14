@@ -12,7 +12,7 @@ class SearchResult implements IteratorAggregate {
 			}
 		}
 	}
-	
+
 	public function ids() {
 		return $this->ids;
 	}
@@ -20,7 +20,7 @@ class SearchResult implements IteratorAggregate {
 	public function objs() {
 		return Node::multiLoad($this->ids);
 	}
-	
+
 	public function totalCount() {
 		return $this->totalCount;
 	}
@@ -36,9 +36,8 @@ class Searcher {
 
 	/**
 	 * @return @type SearchResult
-	 */	
+	 */
 	public static function query($type, $query, $options = []) {
-		if (is_string($query)) $query = QueryParser::parse($query);
 		$params = array(
 			'from'	=>	0,
 			'size'	=>	10,
@@ -55,7 +54,7 @@ class Searcher {
 	public static function index($type, $doc) {
 		return self::write(self::locate($type), $doc);
 	}
-	
+
 	private static function locate($type){
 		$mapping = Config::get("env.searcher.mapping");
 		if (isset($mapping[$type])) {
@@ -63,8 +62,8 @@ class Searcher {
 		} else {
 			return "default/{$type}";
 		}
-	} 
-	
+	}
+
 	private static function read($uri, $params) {
 		$params['timeout']	= self::READ_TIMEOUT . 's';
 		return self::request($uri, $params, 'read');
@@ -75,7 +74,7 @@ class Searcher {
 		$params['replication ']	= 'async';
 		return self::request($uri, $params, 'write');
 	}
-	
+
 	private static function request($uri, $params = [], $type = 'read') {
 		$url = Config::get("env.searcher.cluster") . $uri;
 		$body = Http::postUrl($url, json_encode($params, JSON_UNESCAPED_UNICODE), ($type = 'read' ? self::READ_TIMEOUT : self::WRITE_TIMEOUT) + 1);

@@ -45,7 +45,7 @@ abstract class Service {
 	protected static function activeQuery($time = null) {
 		if (!$time) $time = time();
 		$_time = $time + 1;
-		return "startTime:[,{$_time}] endTime:[{$time},] -cancelTime:[,{$_time}]";
+		return new RawQuery("startTime:[,{$_time}] endTime:[{$time},] -cancelTime:[,{$_time}]");
 	}
 }
 
@@ -59,7 +59,10 @@ abstract class TimebasedService extends Service {
 	abstract protected function subjectQuery();
 
 	protected function activate($time) {
-		$s = Searcher::query('Service', $this->subjectQuery() . " type:{$this->type} endTime:[{$time},]");
+		$q = new AndQuery($this->subjectQuery());
+		$q->add(new Query('type', $this->type));
+		$q->add(new RangeQuery('endTime', $time));
+		$s = Searcher::query('Service', $q);
 		$lastEndTime = 0;
 		foreach ($s as $service) {
 			$lastEndTime = max($lastEndTime, $service->cancelTime ?: $service->endTime);
@@ -93,10 +96,10 @@ class PortService extends TimebasedService {
 	}
 
 	public function activeService($userId, $type = null, $cityEnglishName = null) {
-		$q = self::activeQuery() . " user:{$userId}";
-		if ($type) $q .= " type:{$type}";
+		$q = new AndQuery(self::activeQuery(), self::subjectQuery());
+		if ($type) $q->add("type", $type);
 		//todo: replace cityEnglishName with area when refactor.
-		if ($cityEnglishName) $q .= " cityEnglishName:{$cityEnglishName}";
+		if ($cityEnglishName) $q->add("cityEnglishName", $cityEnglishName);
 		$s = Searcher::query('Service', $q);
 		return $s->totalCount() > 0 ? $s->objs()[0] : null;
 	}
@@ -106,7 +109,7 @@ class PortService extends TimebasedService {
 	}
 
 	protected function subjectQuery() {
-		return "userId:{$this->userId}";
+		return new Query("userId", $this->userId);
 	}
 }
 
@@ -117,7 +120,12 @@ class DingService extends TimebasedService {
 
 	public function ads($category, $area, $args) {
 		$areas = Util::object_map($area->path(), 'id');
-		$q = self::activeQuery() . " category:{$category->id} type:{" . join(',', self::$types) . "} area:{" . join(',', $areas) . "}";
+		$q = new AndQuery(
+			self::activeQuery(),
+			new Query('category', $category->id),
+			new InQuery('type', self::$types),
+			new InQuery('area', $areas)
+		);
 		$s = Searcher::query('Service', $q);
 
 		//todo: need refactor when switch write.
@@ -138,12 +146,13 @@ class DingService extends TimebasedService {
 			$adIds[] = $service->ad->id;
 		}
 
-		$ads += Listing::search($category, $area, $args, "id:{" . join(',', $adIds) . "}")->objs();//use Listing::search to re-check
+		$ads += Listing::search($category, $area, $args, new InQuery('id', $adIds))->objs();//use Listing::search to re-check
 		return $ads;
 	}
 
 	public function activeService($ad) {
-		$s = Searcher::query('Service', self::activeQuery() . " ad:{$ad->id} type:{" . join(',', self::$types) . "}");
+		$q = new AndQuery(self::activeQuery(), self::subjectQuery(), new InQuery('type', self::$types));
+		$s = Searcher::query('Service', $q);
 		return $s->totalCount() > 0 ? $s->objs()[0] : null;
 	}
 
@@ -152,7 +161,7 @@ class DingService extends TimebasedService {
 	}
 
 	protected function subjectQuery() {
-		return new Query('adId', $this->adId);
+		return new Query('ad', $this->ad->id);
 	}
 }
 
@@ -206,7 +215,7 @@ class CompanyAccount {
 		if ($endTime > time())
 			throw new Exception("Refuse to tell you future, because that may be inaccurate");
 
-		$s = Searcher::query('Service', "startTime:[,{$endTime}] endTime:[" . ($startTime - 1) . ",]");
+		$s = Searcher::query('Service', new RawQuery("startTime:[,{$endTime}] endTime:[" . ($startTime - 1) . ",]"));
 
 		foreach ($s->objs() as $serviceData) {
 			$service = Service::factory(ucfirst($serviceData->type), $serviceData);
