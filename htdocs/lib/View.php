@@ -9,7 +9,7 @@ class View {
 		$data,
 		$file_name;
 
-	public function __construct ($view_name, Params $data) {
+	public function __construct ($view_name, Params $data = null) {
 		$this->data = $data ?: new Params();
 		$this->file_name = VIEW_DIR . DIRECTORY_SEPARATOR . $view_name . '.php';
 	}
