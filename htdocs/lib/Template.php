@@ -69,7 +69,7 @@ class Template {
 	private function compile() {
 		// mkdir if the dir is not exist
 		if (!is_dir(dirname($this->getCompiledFilename()))) {
-			mkdir(dirname($this->getCompiledFilename()), 0644);
+			mkdir(dirname($this->getCompiledFilename()), 0644, true);
 		}
 		file_put_contents($this->getCompiledFilename(), self::jade()->render($this->file_name));
 	}
