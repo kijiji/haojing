@@ -13,7 +13,7 @@ class Listing {
 		$opts = array_intersect_key($args, $allowedOptions);
 		$args = array_diff_key($args, $allowedOptions);
 		foreach ($args as $field => $value) {
-			if (Node::getType($value) == 'Entity') $field = 'Entities';
+			if (Node::getType($value) == 'Entity') $field = 'entities';
 			$query->add(new RawQuery("{$field}:{$value}"));
 		}
 		return Searcher::query('Ad', $query, $opts);
