@@ -22,8 +22,8 @@ abstract class CronJob {
 		return $this->disable( (date('H') - $start_hour) % $repeat_period != 0 );
 	}
 	
-	public function isUnique(){
-		$key = get_class($this);
+	public function isUnique($key = ''){
+		$key = get_class($this) . $key;
 		if(Locker::lock($key)) {
 			$this->shutdown_functions[] = function() use($key) { Locker::unlock($key); };
 		} else {
@@ -52,16 +52,20 @@ abstract class CronJob {
 class Locker {
 	private static $file_handlers = [];
 
+	private static function file($key) {
+		return TEMP_DIR . '/' . md5($key) . '.locker';	//需要避免传入的key可能包含特殊字符，作文件名有问题
+	}
+
 	public static function lock($key) {
 		if(isset(self::$file_handlers[$key])) return false;
-		self::$file_handlers[$key] = fopen(TEMP_DIR . '/' . $key . 'locker', 'w+');
+		self::$file_handlers[$key] = fopen(self::file($key), 'w+');
 		return flock(self::$file_handlers[$key], LOCK_EX | LOCK_NB);	// 独占锁、非阻塞
 	}
 	
 	public static function unlock($key) {
 		if (isset(self::$file_handlers[$key])) {
 			fclose(self::$file_handlers[$key]);
-			@unlink(TEMP_DIR . '/' . $key . 'locker');
+			@unlink(self::file($key));
 			unset(self::$file_handlers[$key]);
 		}
 	}

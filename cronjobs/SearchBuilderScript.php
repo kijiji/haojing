@@ -1,6 +1,5 @@
 <?php
 //yubing@baixing.com
-include( '/home/haojing/htdocs/init.php');	//多层init的结构还是有问题，先写死路径。
 
 if( count($argv) < 2 ) {
 	usage();
@@ -33,7 +32,7 @@ switch ($argv[1]) {
 		update($argv[2], $since);
 		break;
 	default:
-		echo 'Unknown cmd';
+		echo "Unknown cmd: {$argv[1]}\n";
 		break;
 }
 
@@ -46,7 +45,7 @@ function buildAll() {
 	$types = array_keys(Config::get('routing'));
 	foreach ($types as $name) {
 		echo "start building {$name}\n";
-		shell_exec("/home/php/bin/php ". __FILE__ ." build {$name} > /dev/null 2>&1 &");
+		shell_exec(PHP_CLI . " " . __FILE__ ." build {$name} > /dev/null 2>&1 &");
 		sleep(120);	//避免db上太多dump出现资源竞争
 	}
 }
@@ -55,7 +54,7 @@ function updateAll() {
 	$types = array_keys(Config::get('routing'));
 	foreach ($types as $name) {
 		echo "start updating {$name}\n";
-		shell_exec("/home/php/bin/php ". __FILE__ ." update {$name} > /dev/null 2>&1 &");
+		shell_exec(PHP_CLI . " " . __FILE__ ." update {$name} > /dev/null 2>&1 &");
 		sleep(5);	//避免db上太多dump出现资源竞争
 	}
 }

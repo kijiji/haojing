@@ -21,7 +21,9 @@ class Cli {
 		return eval($code);
 	}
 
-	private function runFile($file) {
+	private function runFile($argv) {
+		array_shift($argv);	//确保用php file, haojing file的效果是一样的
+		$file = $argv[0];
 		$pos = strpos($file, '?');
 		if ($pos !== false) {
 			parse_str(substr($file, $pos + 1), $_GET);
@@ -41,7 +43,7 @@ class Cli {
 				$this->usage();
 			}
 		} else {
-			$this->runFile($argv[1]);
+			$this->runFile($argv);
 		}
 	}
 }
