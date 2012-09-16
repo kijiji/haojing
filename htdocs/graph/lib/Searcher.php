@@ -101,9 +101,9 @@ class Searcher {
 	private static function locate($type){
 		$mapping = Config::get("env.searcher.mapping");
 		if (isset($mapping[$type])) {
-			return "{$mapping[$type]}/{$type}";
+			return "{$mapping[$type]}/{$type}/";
 		} else {
-			return "default/{$type}";
+			return "default/{$type}/";
 		}
 	}
 
