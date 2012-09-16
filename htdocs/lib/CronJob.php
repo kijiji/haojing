@@ -11,15 +11,15 @@ abstract class CronJob {
 		return $this;
 	}
 
-	public function onMinute($minute, $repeat_period = 60) {
+	public function onMinute($start_minute, $repeat_period = 60) {
 		if($repeat_period > 60) throw new Exception("repeat_period should below 60, use onHour() instead !");
-		return $this->disable( (date('i') - $minute) % $repeat_period == 0 );
+		return $this->disable( (date('i') - $start_minute) % $repeat_period != 0 );
 	}
 	
 
-	public function onHour($hour, $repeat_period = 24) {
+	public function onHour($start_hour, $repeat_period = 24) {
 		if($repeat_period > 24) throw new Exception("repeat_period should below 24, you may need a new function!");
-		return $this->disable( (date('H') - $hour) % $repeat_period == 0 );
+		return $this->disable( (date('H') - $start_hour) % $repeat_period != 0 );
 	}
 	
 	public function isUnique(){
