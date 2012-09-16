@@ -134,11 +134,6 @@ class AdDoc extends NodeDoc {
 		$doc['categoryEntity'] = $ad->category->objectId;
 		$meta = self::parseMeta($ad->category);
 		foreach ($doc as $key => $value) {
-			if (isset($meta[$key]->numeric)) {
-				$value = intval($value);
-				if (is_numeric($value) && $value < 2147483647) $doc[$key . '_i'] = $value;
-			}
-
 			$type = Node::getType($value);
 			if ($type == 'Entity') {
 				try {
@@ -159,6 +154,7 @@ class AdDoc extends NodeDoc {
 
 		$area = $ad->area ?: graph($ad->city->objectId);
 		$doc['areas'] = join(' ', Util::object_map($area->path(), 'id'));
+		$doc['content'] = $doc['content'] . PHP_EOL . $doc['tags'];	//content include all
 		return $doc;
 	}
 
