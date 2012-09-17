@@ -44,8 +44,9 @@ function usage() {
 function buildAll() {
 	$types = array_keys(Config::get('routing'));
 	foreach ($types as $name) {
+		if($name == 'User') continue;	//ES内存不足，暂时不build User
 		echo "start building {$name}\n";
-		shell_exec(PHP_CLI . " " . __FILE__ ." build {$name} > /dev/null 2>&1 &");
+		shell_exec(HAOJING_CLI . " " . __FILE__ ." build {$name} > /dev/null 2>&1 &");
 		sleep(120);	//避免db上太多dump出现资源竞争
 	}
 }
@@ -53,8 +54,9 @@ function buildAll() {
 function updateAll() {
 	$types = array_keys(Config::get('routing'));
 	foreach ($types as $name) {
+		if($name == 'User') continue;	//ES内存不足，暂时不build User
 		echo "start updating {$name}\n";
-		shell_exec(PHP_CLI . " " . __FILE__ ." update {$name} > /dev/null 2>&1 &");
+		shell_exec(HAOJING_CLI . " " . __FILE__ ." update {$name} > /dev/null 2>&1 &");
 		sleep(5);	//避免db上太多dump出现资源竞争
 	}
 }

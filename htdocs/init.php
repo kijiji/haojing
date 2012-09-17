@@ -5,6 +5,7 @@ define('VIEW_DIR', __DIR__ . "/view");
 define('TEMPLATE_DIR', __DIR__ . "/template");
 
 define('PHP_CLI', '/home/php/bin/php');
+define('HAOJING_CLI', '/usr/bin/haojing');
 define('HTDOCS_DIR', __DIR__);
 define('TEMP_DIR', '/tmp');
 define('LOG_DIR', '/home/logs');

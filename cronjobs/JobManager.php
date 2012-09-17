@@ -21,7 +21,7 @@ class JobManager {
 			if ($ret_var != 0) {
 				continue;	//代码有问题的Job不执行
 			}
-			$pid = shell_exec(PHP_CLI . " {$file} > " . LOG_DIR . "/job_exec.log 2>&1 &");
+			$pid = shell_exec(HAOJING_CLI . " {$file} > " . LOG_DIR . "/job_exec.log 2>&1 &");
 			Logger::syslog('JobManager', "{$name} started, PID:" . str_replace('[1]', '', $pid));
 		}
 	}
