@@ -134,6 +134,9 @@ class AdDoc extends NodeDoc {
 		$doc['categoryEntity'] = $ad->category->objectId;
 		$meta = self::parseMeta($ad->category);
 		foreach ($doc as $key => $value) {
+			if (isset($meta[$key]->numeric)) {
+				$doc[$key] = floatval($value);
+			}
 			$type = Node::getType($value);
 			if ($type == 'Entity') {
 				try {
