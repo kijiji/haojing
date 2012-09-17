@@ -94,7 +94,8 @@ class Searcher {
 		return $result;
 	}
 
-	public static function index($type, $doc) {
+	public static function index($type, $doc = []) {
+		if(!$doc) return false;	//过滤空数组，有些数据无需build或者数据有问题的，支持在NodeDoc::build()的时候返回空数组
 		return self::write(self::locate($type), $doc);
 	}
 
@@ -108,13 +109,14 @@ class Searcher {
 	}
 
 	private static function read($uri, $params) {
-		$params['timeout']	= self::READ_TIMEOUT . 's';
+		$uri .= (strpos($uri, '?') === false) ? '?' : '&';
+		$uri .= 'timeout=' . self::READ_TIMEOUT . 's';
 		return self::request($uri, $params, 'read');
 	}
 
 	private static function write($uri, $params) {
-		$params['timeout']	= self::WRITE_TIMEOUT . 's';
-		$params['replication ']	= 'async';
+		$uri .= (strpos($uri, '?') === false) ? '?' : '&';
+		$uri .= 'replication=async&timeout=' . self::WRITE_TIMEOUT . 's';
 		return self::request($uri, $params, 'write');
 	}
 
