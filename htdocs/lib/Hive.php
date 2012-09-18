@@ -9,6 +9,7 @@ class Hive {
 	const TYPE_AFTER = 'after';
 
 	private static $advices = [];
+	private static $registered = [];
 
 	/**
 	 * @param Plugin $plugin 需要注册的Plugin
@@ -20,30 +21,36 @@ class Hive {
 		$allowed_methods = self::filterJoinPoint($methods);
 
 		foreach ($allowed_methods as $each_method) {
-			$meaning = self::explain($each_method);
-			if (!self::registered($meaning)) {
-				self::registerAdvice($plugin, $meaning['method'], $meaning['type'], $meaning['function']);
-				self::markAsRegistered($meaning);
+			list($method, $type, $function) = self::explain($each_method);
+			self::pushAdvice($plugin, $method, $type, $function);
+			if (!self::registered($method, $type)) {
+				self::registerPluginHandler($method, $type);
+				self::markAsRegistered($method, $type);
 			}
 		}
 
 		return $plugin;
 	}
 
+	//@todo privilege control
 	private static function filterJoinPoint(array $methods) {
 		return $methods;
 	}
 
-	private static function registered($meaning) {
-		return false;
+	//@todo deal with more information
+	private static function explain($method) {
+		return [$method['method'], $method['type'], $method['function']];
 	}
 
-	private static function markAsRegistered($meaning) {
-		return false;
+	private static function registered($method, $type) {
+		return isset(self::$registered[$method][$type]);
 	}
 
-	private static function registerAdvice (Plugin $plugin, $method, $type, $function){
-		self::pushAdvice($plugin, $method, $type, $function);
+	private static function markAsRegistered($method, $type) {
+		self::$registered[$method][$type] = true;
+	}
+
+	private static function registerPluginHandler ($method, $type){
 		switch ($type) {
 			case self::TYPE_CHANGE_ARGS :
 				aop_add_before($method, array('Hive', 'changeArg'));
@@ -62,10 +69,6 @@ class Hive {
 
 	private static function pushAdvice($plugin, $method, $type, $function) {
 		self::$advices[$method][$type][] =  array($plugin, $function);
-	}
-
-	private static function explain($method) {
-		return $method;
 	}
 
 	public static function execAfterAndBefore(AopTriggeredJoinpoint $object) {
