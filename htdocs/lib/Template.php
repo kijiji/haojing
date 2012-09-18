@@ -90,8 +90,8 @@ class Template {
 
 	public function __destruct() {
 		// when you need to debug the compile of template, you should change the "true" to "false".
-		if (true && EVN != 'PRODUCTION') {
-			unlink($this->getCompiledFilename());
+		if (true && ENV != 'PRODUCTION') {
+			@unlink($this->getCompiledFilename());
 		}
 	}
 
