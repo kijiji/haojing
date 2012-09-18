@@ -75,9 +75,10 @@ class Hive {
 		foreach (self::$advices[$object->getPointcut()][$type] as $each_method) {
 			$result = call_user_func($each_method, $arg);
 			if ($iterate) {
-				$args = $result;
+				$arg = $result;
 			}
 		}
+		return $result;
 	}
 
 	public static function execAfter(AopTriggeredJoinpoint $object) {
