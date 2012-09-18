@@ -16,16 +16,16 @@ class Hive {
 	 * @return Plugin
 	 */
 	public static function register(Plugin $plugin) {
-		$methods = $plugin->getPlugins();
+		$methods = $plugin->getMethods();
 
 		$allowed_methods = self::filterJoinPoint($methods);
 
 		foreach ($allowed_methods as $each_method) {
-			list($method, $type, $function) = self::explain($each_method);
-			self::pushPlugin($plugin, $method, $type, $function);
-			if (!self::registered($method, $type)) {
-				self::registerPluginHandler($method, $type);
-				self::markAsRegistered($method, $type);
+			list($join_point, $type, $function) = self::explain($each_method);
+			self::pushMethod($plugin, $join_point, $type, $function);
+			if (!self::registered($join_point, $type)) {
+				self::registerPluginHandler($join_point, $type);
+				self::markAsRegistered($join_point, $type);
 			}
 		}
 
@@ -42,60 +42,57 @@ class Hive {
 		return [$method['method'], $method['type'], $method['function']];
 	}
 
-	private static function registered($method, $type) {
-		return isset(self::$registered[$method][$type]);
+	private static function registered($join_point, $type) {
+		return isset(self::$registered[$join_point][$type]);
 	}
 
-	private static function markAsRegistered($method, $type) {
-		self::$registered[$method][$type] = true;
+	private static function markAsRegistered($join_point, $type) {
+		self::$registered[$join_point][$type] = true;
 	}
 
-	private static function registerPluginHandler ($method, $type){
+	private static function registerPluginHandler ($join_point, $type){
 		switch ($type) {
 			case self::TYPE_CHANGE_ARGS :
-				aop_add_before($method, array('Hive', 'changeArg'));
+				aop_add_before($join_point, array('Hive', 'changeArg'));
 				break;
 			case self::TYPE_CHANGE_RESULT :
-				aop_add_after($method, array('Hive', 'changeResult'));
+				aop_add_after($join_point, array('Hive', 'changeResult'));
 				break;
 			case self::TYPE_BEFORE :
-				aop_add_before($method, array('Hive', 'execBefore'));
+				aop_add_before($join_point, array('Hive', 'execBefore'));
 				break;
 			case self::TYPE_AFTER :
-				aop_add_after($method, array('Hive', 'execAfter'));
+				aop_add_after($join_point, array('Hive', 'execAfter'));
 				break;
 		}
 	}
 
-	private static function pushPlugin($plugin, $method, $type, $function) {
-		self::$advices[$method][$type][] =  array($plugin, $function);
+	private static function pushMethod($plugin, $join_point, $type, $function) {
+		self::$advices[$join_point][$type][] =  array($plugin, $function);
 	}
 
-	private static function exec (AopTriggeredJoinpoint $object, $type, $args) {
+	private static function exec (AopTriggeredJoinpoint $object, $type, $args, $iterate) {
 		foreach (self::$advices[$object->getPointcut()][$type] as $each_method) {
-			call_user_func_array($each_method, $args);
+			$result = call_user_func_array($each_method, $args);
+			if ($iterate) {
+				$args = $result;
+			}
 		}
 	}
 
-	private static function iterExec(AopTriggeredJoinpoint $object, $type, $args) {
-		foreach (self::$advices[$object->getPointcut()][$type] as $each_method) {
-			$args = call_user_func_array($each_method, $args);
-		}
-		return $args;
-	}
 	public static function execAfter(AopTriggeredJoinpoint $object) {
-		self::exec($object, self::TYPE_AFTER, $object->getReturnedValue());
+		self::exec($object, self::TYPE_AFTER, $object->getReturnedValue(), false);
 	}
 
 	public static function execBefore(AopTriggeredJoinpoint $object) {
-		self::exec($object, self::TYPE_BEFORE, $object->getArguments());
+		self::exec($object, self::TYPE_BEFORE, $object->getArguments(), false);
 	}
 
 	public static function changeArg(AopTriggeredJoinpoint $object) {
-		$object->setArguments(self::iterExec($object, self::TYPE_CHANGE_ARGS, $object->getArguments()));
+		$object->setArguments(self::exec($object, self::TYPE_CHANGE_ARGS, $object->getArguments(), true));
 	}
 
 	public static function changeResult(AopTriggeredJoinpoint $object) {
-		$object->setReturnedValue(self::iterExec($object, self::TYPE_CHANGE_RESULT, $object->getReturnedValue()));
+		$object->setReturnedValue(self::exec($object, self::TYPE_CHANGE_RESULT, $object->getReturnedValue(), true));
 	}
 }

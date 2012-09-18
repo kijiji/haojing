@@ -1,7 +1,7 @@
 <?php
 //lianghonghao@baixing.com
 class Plugin {
-	public function getPlugins() {
+	public function getMethods() {
 		return array_filter(array_map(array($this, 'filterMethodName'), get_class_methods($this)));
 	}
 
