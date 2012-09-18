@@ -22,7 +22,7 @@ class Hive {
 
 		foreach ($allowed_methods as $each_method) {
 			list($method, $type, $function) = self::explain($each_method);
-			self::pushAdvice($plugin, $method, $type, $function);
+			self::pushPlugin($plugin, $method, $type, $function);
 			if (!self::registered($method, $type)) {
 				self::registerPluginHandler($method, $type);
 				self::markAsRegistered($method, $type);
@@ -59,50 +59,43 @@ class Hive {
 				aop_add_after($method, array('Hive', 'changeResult'));
 				break;
 			case self::TYPE_BEFORE :
-				aop_add_before($method, array('Hive', 'execAfterAndBefore'));
+				aop_add_before($method, array('Hive', 'execBefore'));
 				break;
 			case self::TYPE_AFTER :
-				aop_add_after($method, array('Hive', 'execAfterAndBefore'));
+				aop_add_after($method, array('Hive', 'execAfter'));
 				break;
 		}
 	}
 
-	private static function pushAdvice($plugin, $method, $type, $function) {
+	private static function pushPlugin($plugin, $method, $type, $function) {
 		self::$advices[$method][$type][] =  array($plugin, $function);
 	}
 
-	public static function execAfterAndBefore(AopTriggeredJoinpoint $object) {
-		$ori_arg = $object->getArguments();
-		$type = ($object->getKindOfAdvice() & AOP_KIND_BEFORE) ? self::TYPE_BEFORE : self::TYPE_AFTER;
+	private static function exec (AopTriggeredJoinpoint $object, $type, $args) {
 		foreach (self::$advices[$object->getPointcut()][$type] as $each_method) {
-			call_user_func_array($each_method, $ori_arg);
+			call_user_func_array($each_method, $args);
 		}
+	}
+
+	private static function iterExec(AopTriggeredJoinpoint $object, $type, $args) {
+		foreach (self::$advices[$object->getPointcut()][$type] as $each_method) {
+			$args = call_user_func_array($each_method, $args);
+		}
+		return $args;
+	}
+	public static function execAfter(AopTriggeredJoinpoint $object) {
+		self::exec($object, self::TYPE_AFTER, $object->getReturnedValue());
+	}
+
+	public static function execBefore(AopTriggeredJoinpoint $object) {
+		self::exec($object, self::TYPE_BEFORE, $object->getArguments());
 	}
 
 	public static function changeArg(AopTriggeredJoinpoint $object) {
-		$ori_arg = $object->getArguments();
-		$new_arg = $ori_arg;
-		foreach (self::$advices[$object->getPointcut()][self::TYPE_CHANGE_ARGS] as $each_method) {
-			$new_arg = call_user_func($each_method, $ori_arg);
-			if (count($new_arg) != count($ori_arg)) {
-				$new_arg = $ori_arg;
-			}
-		}
-		$object->setArguments($new_arg);
+		$object->setArguments(self::iterExec($object, self::TYPE_CHANGE_ARGS, $object->getArguments()));
 	}
 
 	public static function changeResult(AopTriggeredJoinpoint $object) {
-		$return_value = $object->getReturnedValue();
-		foreach (self::$advices[$object->getPointcut()][self::TYPE_CHANGE_RESULT] as $each_method) {
-			$return_value = call_user_func($each_method, $return_value);
-		}
-		$object->setReturnedValue($return_value);
-	}
-
-	public static function execBefore(AopTriggeredJoinpoint $object){
-		$ori_arg = $object->getArguments();
-		foreach (self::$advices[$object->getPointcut()][self::TYPE_BEFORE] as $each_method) {
-			call_user_func_array($each_method, $ori_arg);
-		}
+		$object->setReturnedValue(self::iterExec($object, self::TYPE_CHANGE_RESULT, $object->getReturnedValue()));
 	}
 }
