@@ -189,8 +189,7 @@ class QueryParser {
 			if (is_array($item)) {
 				if (!$item['key']) $item['key'] = 'title'; //todo: as the full content index field;
 				if (preg_match('/^\[(?<lower>\d*),(?<upper>\d*)\]$/', $item['value'], $m)) {
-					//todo: may figure out a better way of "_i"
-					$query = new RangeQuery($item['key'] . '_i', $m['lower'] == '' ? null : $m['lower'], $m['upper'] == '' ? null : $m['upper']);
+					$query = new RangeQuery($item['key'], $m['lower'] == '' ? null : $m['lower'], $m['upper'] == '' ? null : $m['upper']);
 				} elseif (preg_match('/^\{(([\"\']?[^\"\'\,]+[\"\'\,]*)+)\}$/', $item['value'], $m)) {
 					$values = array_map(function ($o) {return preg_replace('/^(\"|\')(.*?)\1$/', "$2", $o);}, explode(',', $m[1]));
 					$query = new InQuery($item['key'], $values);
