@@ -3,10 +3,10 @@
  * 顾名思义，是一个有很多孔可以插东西的类，恩恩……
  */
 class Hive {
-	const TYPE_CHANGE_ARG = 0x01;
-	const TYPE_CHANGE_RESULT = 0x02;
-	const TYPE_BEFORE = 0x04;
-	const TYPE_AFTER = 0x08;
+	const TYPE_CHANGE_ARGS = 'args';
+	const TYPE_CHANGE_RESULT = 'result';
+	const TYPE_BEFORE = 'before';
+	const TYPE_AFTER = 'after';
 
 	private static $advices = [];
 
@@ -45,17 +45,17 @@ class Hive {
 	private static function registerAdvice (Plugin $plugin, $method, $type, $function){
 		self::pushAdvice($plugin, $method, $type, $function);
 		switch ($type) {
-			case self::TYPE_CHANGE_ARG :
-				aop_add_before($method, array('Plugin', 'changeArg'));
+			case self::TYPE_CHANGE_ARGS :
+				aop_add_before($method, array('Hive', 'changeArg'));
 				break;
 			case self::TYPE_CHANGE_RESULT :
-				aop_add_after($method, array('Plugin', 'changeResult'));
+				aop_add_after($method, array('Hive', 'changeResult'));
 				break;
 			case self::TYPE_BEFORE :
-				aop_add_before($method, array('Plugin', 'execAfterAndBefore'));
+				aop_add_before($method, array('Hive', 'execAfterAndBefore'));
 				break;
 			case self::TYPE_AFTER :
-				aop_add_after($method, array('Plugin', 'execAfterAndBefore'));
+				aop_add_after($method, array('Hive', 'execAfterAndBefore'));
 				break;
 		}
 	}
@@ -79,7 +79,7 @@ class Hive {
 	public static function changeArg(AopTriggeredJoinpoint $object) {
 		$ori_arg = $object->getArguments();
 		$new_arg = $ori_arg;
-		foreach (self::$advices[$object->getPointcut()][self::TYPE_CHANGE_ARG] as $each_method) {
+		foreach (self::$advices[$object->getPointcut()][self::TYPE_CHANGE_ARGS] as $each_method) {
 			$new_arg = call_user_func($each_method, $ori_arg);
 			if (count($new_arg) != count($ori_arg)) {
 				$new_arg = $ori_arg;
