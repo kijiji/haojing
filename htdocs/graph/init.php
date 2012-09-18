@@ -7,9 +7,6 @@ if( !defined('CONFIG_DIR')) {
 
 mb_internal_encoding('UTF-8');
 
-define('LOG_DIR', '/home/logs');
-define('TEMP_DIR', '/tmp');
-
 spl_autoload_register(function($name) {
 	if (file_exists(__DIR__ . "/lib/{$name}.php")) {
 		require __DIR__ . "/lib/{$name}.php";

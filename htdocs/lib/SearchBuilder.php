@@ -25,11 +25,7 @@ class SearchBuilder extends Data {
 	}
 
 	public function buildAll(){
-		$key = "{$this->type}_Builder";
-		if(Locker::lock($key)) {
-			$this->build($this->getIds('getAllIds'));
-			Locker::unlock($key);
-		}
+		$this->build($this->getIds('getAllIds'));
 	}
 
 	public function buildModified($since){
@@ -64,6 +60,17 @@ class SearchBuilder extends Data {
 			}
 		}
 	}
+	
+	public static function buildOne($id) {
+		$node = new Node($id);
+		try {
+			$node->load();
+			$builder = new self($node->type());
+			Searcher::index($node->type(), $builder->buildDoc($node));
+		} catch (Exception $exc) {
+			file_put_contents(LOG_DIR . '/es_build_error.log', $exc->getMessage() . "\n", FILE_APPEND);
+		}
+	}
 
 	private function logFile() {
 		return LOG_DIR . "/last_{$this->type}.log";
@@ -90,25 +97,6 @@ class SearchBuilder extends Data {
 		else return NodeDoc::build($node);
 	}
 
-}
-
-// 单机锁
-class Locker {
-	private static $file_handlers = [];
-
-	public static function lock($key) {
-		if(isset(self::$file_handlers[$key])) return false;
-		self::$file_handlers[$key] = fopen(TEMP_DIR . '/' . $key . 'locker', 'w+');
-		return flock(self::$file_handlers[$key], LOCK_EX | LOCK_NB);	// 独占锁、非阻塞
-	}
-
-	public static function unlock($key) {
-		if (isset(self::$file_handlers[$key])) {
-			fclose(self::$file_handlers[$key]);
-			@unlink(TEMP_DIR . '/' . $key . 'locker');
-			unset(self::$file_handlers[$key]);
-		}
-	}
 }
 
 class NodeDoc {
@@ -156,7 +144,7 @@ class AdDoc extends NodeDoc {
 		$doc['entities'] = join(' ', $entities);
 
 		$area = $ad->area ?: graph($ad->city->objectId);
-		$doc['areas'] = join(' ', Util::object_map($area->path(), 'id'));
+		if($area) $doc['areas'] = join(' ', Util::object_map($area->path(), 'id'));
 		$doc['content'] = $doc['content'] . PHP_EOL . $doc['tags'];	//content include all
 		return $doc;
 	}
@@ -172,5 +160,13 @@ class AdDoc extends NodeDoc {
 			$metaArray[strval($meta->name)] = $meta;
 		}
 		return self::$meta[$category->id] = $metaArray;
+	}
+}
+
+class UserDoc extends NodeDoc {
+	public static function buildDoc($node) {
+		$doc = parent::buildDoc($node);
+		unset($doc['password']);	//不能索引密码字段
+		return $doc;
 	}
 }

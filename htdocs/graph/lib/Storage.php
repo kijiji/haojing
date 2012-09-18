@@ -122,7 +122,7 @@ class MysqlStorage extends Storage implements ReadableStorage, SearchableStorage
 		$sql = "SELECT `{$this->config['columns']['id']}` "
 		. "FROM `{$this->config['table']}` "
 		. "WHERE `{$this->config['columns'][$col]}` >= {$timestamp} "
-		. "ORDER BY `{$this->config['columns'][$col]}` ASC" ;
+		. "ORDER BY `{$this->config['columns'][$col]}` DESC" ;
 		$this->result = mysql_unbuffered_query($sql, $conn);
 		$big_array = new BigArray();
 		while($row = mysql_fetch_row($this->result)) {
