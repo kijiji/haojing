@@ -71,13 +71,14 @@ class Hive {
 		self::$advices[$join_point][$type][] =  array($plugin, $function);
 	}
 
-	private static function exec (AopTriggeredJoinpoint $object, $type, $args, $iterate) {
+	private static function exec (AopTriggeredJoinpoint $object, $type, $arg, $iterate) {
 		foreach (self::$advices[$object->getPointcut()][$type] as $each_method) {
-			$result = call_user_func_array($each_method, $args);
+			$result = call_user_func($each_method, $arg);
 			if ($iterate) {
-				$args = $result;
+				$arg = $result;
 			}
 		}
+		return $result;
 	}
 
 	public static function execAfter(AopTriggeredJoinpoint $object) {
