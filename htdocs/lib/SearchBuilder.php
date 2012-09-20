@@ -141,12 +141,13 @@ class AdDoc extends NodeDoc {
 				$tags[] = $value;
 			}
 		}
-		$doc['tags'] = join(' ', array_map(function($v){return str_replace(' ', '', $v);}, $tags));
-		$doc['entities'] = join(' ', $entities);
+		$doc['tags'] = array_map(function($v){return str_replace(' ', '', $v);}, $tags);
+		$doc['entities'] = $entities;
 
 		$area = $ad->area ?: graph($ad->city->objectId);
-		if($area) $doc['areas'] = join(' ', Util::object_map($area->path(), 'id'));
-		$doc['content'] = (isset($doc['content']) ? $doc['content'] . PHP_EOL : '') . $doc['tags'];	//content include all
+		$doc['area'] = Util::object_map($area->path(), 'id');
+		$doc['category'] = Util::object_map($ad->category->path(), 'id');
+		$doc['content'] = (isset($doc['content']) ? $doc['content'] . PHP_EOL : '') . join('\n', $doc['tags']);	//content include all
 		return $doc;
 	}
 

@@ -127,9 +127,9 @@ class DingService extends TimebasedService {
 		if (isset($args['area'])) {
 			$area = graph($args['area']);
 			$areas = Util::object_map($area->path(), 'id');
-			$q->add(new InQuery('areas', $areas));
+			$q->add(new InQuery('area', $areas));
 		}
-		$s = Searcher::query('Service', $q);
+		$s = Searcher::query('Service', $q, ['size' => 1000]);
 
 		//todo: need refactor when switch write.
 		$recheckAdIds = $adIds = [];
