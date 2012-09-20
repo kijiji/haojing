@@ -124,6 +124,7 @@ class AdDoc extends NodeDoc {
 		foreach ($doc as $key => $value) {
 			if (isset($meta[$key]->numeric)) {
 				$doc[$key] = floatval($value);
+				continue;
 			}
 			$type = Node::getType($value);
 			if ($type == 'Entity') {
@@ -145,7 +146,7 @@ class AdDoc extends NodeDoc {
 
 		$area = $ad->area ?: graph($ad->city->objectId);
 		if($area) $doc['areas'] = join(' ', Util::object_map($area->path(), 'id'));
-		$doc['content'] = $doc['content'] . PHP_EOL . $doc['tags'];	//content include all
+		$doc['content'] = (isset($doc['content']) ? $doc['content'] . PHP_EOL : '') . $doc['tags'];	//content include all
 		return $doc;
 	}
 
@@ -164,8 +165,8 @@ class AdDoc extends NodeDoc {
 }
 
 class UserDoc extends NodeDoc {
-	public static function buildDoc($node) {
-		$doc = parent::buildDoc($node);
+	public static function build($node) {
+		$doc = parent::build($node);
 		unset($doc['password']);	//不能索引密码字段
 		return $doc;
 	}

@@ -40,7 +40,18 @@ class Node extends Data {
 
 	private function conn($connName, $args) {
 		$conns = $this->connections();
-		if(isset($conns[$connName])) {
+		if (isset($conns[$connName])) {
+			if (is_string($conns[$connName])) {
+				$conns[$connName] = [
+					'description' => $conns[$connName],
+					'type' => 'SearchConnection',
+					'conf' => [
+						'type' => ucfirst($connName),
+						'col' => lcfirst($this->type()),
+						'query' => ($connName == 'ad') ? ['status' => '0'] : [],
+					],
+				];
+			}
 			return Connection::create($conns[$connName])->find($this->load(), $args);
 		} else {
 			throw new Exception("Illegal connection: '{$connName}' for type '{$this->type()}'");

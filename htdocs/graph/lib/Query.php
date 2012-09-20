@@ -10,7 +10,7 @@ class Query {
 		list($this->field, $this->value) = [$field, $value];
 	}
 
-	function esQuery() {
+	public function esQuery() {
 		if (in_array($this->field, ['title', 'content']) ) {	//ES的meta配置里面对title和content字段都做了分词
 			return ['text' => [$this->field => ['query' => $this->value, 'operator' => 'and']]];
 		} else {
@@ -18,33 +18,32 @@ class Query {
 		}
 	}
 
-	function accept($o) {
+	public function accept($o) {
 		if (is_null($o->{$this->field})) return false;
 		return (is_scalar($o->{$this->field}) ? $o->{$this->field} : $o->{$this->field}->id) == $this->value;
 	}
 }
 
-
 class AndQuery extends Query {
 	protected $children = [];
+	protected $boolOperator = 'must';
 
 	public function  __construct() {
-		unset($this->field);
-		unset($this->value);
 		foreach (func_get_args() as $q) {
 			$this->add($q);
 		}
 	}
 
-	function esQuery() {
-		$arr = ['bool' => ['must' => []]];
-		foreach($this->children as $child) {
-			$arr['bool']['must'][] = $child->esQuery();
+	public function esQuery() {
+		$arr = ['bool' => [$this->boolOperator => []]];
+		foreach ($this->children as $child) {
+			$arr['bool'][$this->boolOperator][] = $child->esQuery();
 		}
 		return $arr;
 	}
 
-	function add($q) {
+	public function add($q) {
+		if (get_class($q) == 'RawQuery') $q = $q->query();
 		if (get_class($this) == get_class($q)) {
 			$this->children = array_merge($this->children, $q->children);
 		} else {
@@ -52,29 +51,31 @@ class AndQuery extends Query {
 		}
 	}
 
-	function accept($o) {
+	public function accept($o) {
 		foreach ($this->children as $q) {
-			if ($q->accept($o) == false) {
-				return false;
-			}
+			if ($q->accept($o) == false) return false;
 		}
 		return true;
 	}
 }
 
 class TrueQuery {
-	function esQuery() {
+	public function esQuery() {
 		return ['match_all' => new stdClass()];
 	}
 }
 
 class RawQuery {
 	private $query;
-	function __construct($queryString) {
+	public function __construct($queryString) {
 		$this->query = QueryParser::parse($queryString);
 	}
 
-	function esQuery() {
+	public function query() {
+		return $this->query;
+	}
+
+	public function esQuery() {
 		return $this->query->esQuery();
 	}
 }
@@ -83,7 +84,7 @@ class RangeQuery extends Query {
 	protected $lower;
 	protected $upper;
 
-	function __construct($field, $lower = null, $upper = null) {
+	public function __construct($field, $lower = null, $upper = null) {
 		$this->field = $field;
 		$this->lower = $lower;
 		if (!(is_numeric($upper) && $upper > 2147483647)) {
@@ -95,7 +96,7 @@ class RangeQuery extends Query {
 		return trim($val);
 	}
 
-	function esQuery() {
+	public function esQuery() {
 		$arr = ['range' => [$this->field => []]];
 		if (!is_null($this->lower)) {
 			$arr['range'][$this->field]['from'] = $this->format($this->lower);
@@ -106,41 +107,33 @@ class RangeQuery extends Query {
 		return $arr;
 	}
 
-	function accept($o) {
+	public function accept($o) {
 		return ( (($this->upper === null) ? true : ($o->{$this->field} <= $this->upper))
 			&& (($this->lower === null) ? true : ($o->{$this->field} >= $this->lower)) );
 	}
 }
 
-class NotQuery extends AndQuery {
-	function esQuery() {
-		$arr = ['bool' => ['must_not' => []]];
-		foreach($this->children as $child) {
-			$arr['bool']['must_not'][]= $child->esQuery();
-		}
-		return $arr;
+class NotQuery extends Query {
+	private $query;
+	public function __construct($query) {
+		$this->query = $query;
 	}
 
-	function accept($o) {
-		return !parent::accept($o);
+	public function accept($o) {
+		return !$this->query->accept($o);
+	}
+
+	public function esQuery() {
+		return ['bool' => ['must_not' => $this->query->esQuery()]];
 	}
 }
 
 class OrQuery extends AndQuery {
+	protected $boolOperator = 'should';
 
-	function esQuery() {
-		$arr = ['bool' => ['should' => [], 'minimum_number_should_match' => 1]];
-		foreach ($this->children as $child) {
-			$arr['bool']['should'][] = $child->esQuery();
-		}
-		return $arr;
-	}
-
-	function accept($o) {
+	public function accept($o) {
 		foreach ($this->children as $q) {
-			if ($q->accept($o)) {
-				return true;
-			}
+			if ($q->accept($o)) return true;
 		}
 		return false;
 	}
@@ -153,7 +146,7 @@ class InQuery extends OrQuery {
 		$this->values= $values;
 	}
 
-	function esQuery() {
+	public function esQuery() {
 		$arr = ['terms' => [$this->field => [], 'minimum_match' => 1]];
 		foreach ($this->values as $val) {
 			$arr['terms'][$this->field][] = $val;
@@ -161,7 +154,7 @@ class InQuery extends OrQuery {
 		return $arr;
 	}
 
-	function accept($o) {
+	public function accept($o) {
 		foreach ($this->values as $value) {
 			$this->add(new Query($this->field, $value));
 		}
@@ -169,13 +162,10 @@ class InQuery extends OrQuery {
 	}
 }
 
-
-
 /*
  * HJQuery is a format query string in Haojing
  * like: (a:b OR a:"c" OR (b:[1,10] AND e:[,100]))
  */
-
 class QueryParser {
 	public static function parse($HJQueryString) {
 		$str = preg_replace('/\s+/', ' ', trim($HJQueryString));

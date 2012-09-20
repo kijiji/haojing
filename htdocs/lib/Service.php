@@ -118,22 +118,24 @@ class DingService extends TimebasedService {
 
 	private static $types = ['ding', 'dingKeyword', 'dingAll', 'dingProvince'];
 
-	public function ads($category, $args, $opts) {
-		$area = graph($args['area']);
-		$areas = Util::object_map($area->path(), 'id');
+	public function ads($category, $args) {
 		$q = new AndQuery(
 			self::activeQuery(),
 			new Query('category', $category->id),
-			new InQuery('type', self::$types),
-			new InQuery('area', $areas)
+			new InQuery('type', self::$types)
 		);
+		if (isset($args['area'])) {
+			$area = graph($args['area']);
+			$areas = Util::object_map($area->path(), 'id');
+			$q->add(new InQuery('areas', $areas));
+		}
 		$s = Searcher::query('Service', $q);
 
 		//todo: need refactor when switch write.
-		$adIds = $ads = [];
+		$recheckAdIds = $adIds = [];
 		foreach ($s->objs() as $service) {
 			if (in_array($service->type, ['dingAll', 'dingProvince'])) { // need not use Listing::search to re-check
-				$ads[] = $service->ad;
+				$adIds[$service->ad->id] = $service->ad->id;
 				continue;
 			} elseif ($service->type == 'dingKeyword') {
 				if (!in_array($service->tag->type, ['area2', 'area3']) && !in_array($service->tag->id, $args) &&
@@ -144,12 +146,17 @@ class DingService extends TimebasedService {
 				)
 					continue;
 			}
-			$adIds[] = $service->ad->id;
+			$recheckAdIds[$service->ad->id] = $service->ad->id;
 		}
 
-		$args['id'] = '{' . join(',', $adIds) . '}';
-		$ads += Listing::ads($category, $args, $opts);//use Listing::search to re-check
-		return $ads;
+		$res = new SearchResult(null);
+		$res->mergeIds($adIds);
+
+		if ($recheckAdIds) {
+			$args['id'] = '{' . join(',', $recheckAdIds) . '}';
+			$res->mergeIds(Listing::ads($category, $args)->ids());//re-check
+		}
+		return $res;
 	}
 
 	public function activeService($adId) {

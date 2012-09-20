@@ -1,63 +1,90 @@
 <?
 
+class ListingPlugin extends Plugin {
+	private $category;
+	private $args;
+	private $query;
+	private $opts;
+
+	public function getMethods() {
+		$plugins = [];
+		$plugins[] = [
+			'method' => 'ListingConnection->find()',
+			'function' => 'ding',
+			'type' => Hive::TYPE_CHANGE_RESULT,
+		];
+		$plugins[] = [
+			'method' => 'ListingConnection->find()',
+			'function' => 'extend',
+			'type' => Hive::TYPE_CHANGE_RESULT,
+		];
+		return array_merge(parent::getMethods(), $plugins);
+	}
+	/*
+	public function changeListingConnection__findResult ($res) {
+		echo 'xx';
+		try {
+			throw new Exception('ww');
+		} catch (Exception $e) {
+			echo 'exp';
+		}
+		return $res;
+	}
+*/
+	public function beforeListingConnection__find($args) {
+		list($this->category, $this->args) = $args;
+		list($this->query, $this->opts) = Listing::buildQuery($this->category, $this->args);
+	}
+
+	public function ding($listingResult) {
+		if (isset($this->opts['from']) && $this->opts['from'] > 0) return $listingResult;
+		$dingResult = Service::factory('Ding')->ads($this->category, $this->args);
+		$listingResult->mergeIds($dingResult->ids(), true);
+		return $listingResult;
+	}
+
+	public function extend($listingResult) {
+		if (isset($this->opts['from']) && $this->opts['from'] > 0) return $listingResult;
+		//	$ids = CollabrationFilter::getRecommendAds($this->category, $this->args);
+		//	$extendResult = Searcher::query('Ad', new InQuery('id', $ids));
+		//	$listingResult->mergeIds($extendResult->ids());
+		return $listingResult;
+	}
+}
+
 class Listing {
-	public static function ads($category, $args, $opts) {
-		return Searcher::query('Ad', self::getQuery($category, $args), $opts)->objs();
+
+	public static function ads($category, $args) {
+		list($query, $opts) = self::buildQuery($category, $args);
+		return Searcher::query('Ad', $query, $opts);
 	}
 
-	public static function getQuery($category, $args) {
-		$query = new AndQuery(new RawQuery("category:{$category->id} status:0"));
-		//$query = new AndQuery(new RawQuery("entities:{$category->objectId} status:0"));
-
-		foreach ($args as $field => $value) {
-			if (Node::getType($value) == 'Entity') $field = 'entities';
-			if ($field == 'query') $field = 'content'; //todo: check if "content" can be searched by split words
-			$query->add(new RawQuery("{$field}:'{$value}'"));
-		}
-		return $query;
-	}
-
-	public static function addDingAds($ads, $category, $args, $opts) {
-		if ($opts['from'] > 0) return $ads;
-		$dingAds = Service::factory('Ding')->ads($category, $args, $opts);
-		$dingIds = Util::object_map($dingAds, 'id');
-		$ads = array_filter($ads, function ($ad) use ($dingIds) { return !in_array($ad->id, $dingIds); });
-		return array_merge($dingAds, $ads);
-	}
-
-	public static function addExtendAds($ads, $category, $args, $opts) {
-		if (count($ads) >= $opts['size']) return $ads;
-		// use collaboration filter
-		/*
-		$key = $category->id . '/' . urldecode(http_build_query($args));
-		$cfLstSet = new \Redis\Set('CF_' . $key . '_' . date('md'), 86400 * 3);
-		$cfLstSet->add(Visitor::trackId());
-		$ms = $cfLstSet->members();
-		$setNames = array();
-		foreach (array_slice($ms, 0, 100) as $vtrId) {
-			$k = 'CF_' . $vtrId . '_' . $categoryEnglishName . date('md', time() - 86400);
-			$zs = new Redis\ZSet($k, 86400 * 3);
-			$setNames[] = $zs->RedisId;
-		}
-		$adIds = Redis\ZSet::union($setNames)->range(0, 100, Redis\ZSet::ORDER_REV);
-		foreach (Ad::loader()->loads(array_keys($adIds)) as $ad) {
-			echo "<a href='{$ad->link()}'>{$ad->title}</a> ({$adIds[$ad->id]})<br />";
-		}
-
-		$existIds = Util::object_map($ads, 'id');
-		return array_merge($ads, Node::multiLoad(array_diff(array_keys($adIds), $existIds)));
-		*/
-		return $ads;
-	}
-
-	public static function tags($category, $args) {
-		$facetEntities = Searcher::facet('Ad', self::getQuery($category, $args), ['field' => 'entities', 'size' => 200]);
+	public static function entities($category, $args) {
+		list($query, $opts) = self::buildQuery($category, $args);
+		$facetEntities = Searcher::facet('Ad', $query, ['field' => 'entities', 'size' => 200]);
 		$tagSet = [];
 		foreach ($facetEntities as $entity => $count) {
-			if ($count < 20) continue;
+			if ($count < 3) continue;
 			$node = new Node($entity);
 			$tagSet[$node->type][] = $node;
 		}
 		return array_filter($tagSet, function ($tags) { return count($tags) > 1; });
+	}
+
+	public static function buildQuery($category, $args) {
+		$query = new AndQuery(new RawQuery("category:{$category->id} status:0"));
+		//$query = new AndQuery(new RawQuery("entities:{$category->objectId} status:0"));
+		$allowedOptions = array(
+			'size' => true,
+			'from' => true,
+		);
+		$opts = array_intersect_key($args, $allowedOptions);
+		$args = array_diff_key($args, $allowedOptions);
+		foreach ($args as $field => $value) {
+			if ('Entity' == Node::getType($value)) $field = 'entities';
+			if (is_numeric($field) || $field == 'query') $field = 'content'; //todo: check if "content" can be searched by split words
+			$query->add(new RawQuery("{$field}:'{$value}'"));
+		}
+		return [$query, $opts];
 	}
 }

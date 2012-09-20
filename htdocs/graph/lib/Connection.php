@@ -6,20 +6,32 @@ class Connection {
 
 	public static function create($conf) {
 		$conn = new $conf['type'];
-		$conn->config = $conf['conf'];
+		if (isset($conf['conf'])) $conn->config = $conf['conf'];
 		return $conn;
 	}
-	
+
 	public function find($node, $args){
 		return [];
+	}
+}
+
+class ListingConnection extends SearchConnection {
+	public function find($category, $args) {
+		return Listing::ads($category, $args);
+	}
+}
+
+class ListingFilterConnection extends SearchConnection {
+	public function find($category, $args) {
+		return Listing::entities($category, $args);
 	}
 }
 
 class SearchConnection extends Connection {
 	public function find($node, $args) {
 		$query = new AndQuery(
-				new Query($this->config['col'], $node->id)
-				);
+			new Query($this->config['col'], $node->id)
+		);
 
 		$allowedOptions = array(
 			'size' => true,

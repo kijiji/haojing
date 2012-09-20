@@ -4,19 +4,24 @@
 class SearchResult implements IteratorAggregate {
 	private $ids = [];
 	private $totalCount, $size, $from;
-	public function __construct($response, $params) {
-		if ($response != null && $response->hits->total != 0) {
+	public function __construct($response, $params = null) {
+		if ($response != null && !isset($response->error) && $response->hits->total != 0) {
 			$this->totalCount = $response->hits->total;
 			foreach ($response->hits->hits as $doc) {
 				$this->ids[$doc->_id] = $doc->_id;
 			}
 		}
-		$this->size = $params['size'];
-		$this->from = $params['from'];
+		if (isset($params['size'])) $this->size = $params['size'];
+		if (isset($params['from'])) $this->from = $params['from'];
 	}
 
 	public function ids() {
 		return $this->ids;
+	}
+
+	public function mergeIds($ids, $mergeBefore = null) {
+		$this->ids = array_unique($mergeBefore ? $ids + $this->ids : $this->ids + $ids);
+		return $this;
 	}
 
 	public function objs() {
@@ -45,11 +50,18 @@ class Searcher {
 	const WRITE_TIMEOUT = 30;
 
 	private static $facetTypes = [
-		'terms' => ['field' => true, 'size' => false],
-		'range' => ['field' => true, 'ranges' => true],
-		'histogram' => ['field' => true, 'interval' => true],
-		'date_histogram' => ['field' => true, 'interval' => true],
-		//'geo_distance' => ['pin.location' => true, 'ranges' => true],
+		'terms' => [
+			'params' => ['field' => true, 'size' => false],
+			'response' => ['key' => 'terms', 'term' => 'term', 'count' => 'count']],
+		'range' => [
+			'params' => ['field' => true, 'ranges' => true],
+			'response' => ['key' => 'ranges']],
+		'histogram' => [
+			'params' => ['field' => true, 'interval' => true],
+			'response' => ['key' => 'entries', 'term' => 'key', 'count' => 'count']],
+		'date_histogram' => [
+			'params' => ['field' => true, 'interval' => true],
+			'response' => ['key' => 'entries', 'term' => 'key', 'count' => 'count']],
 	];
 
 	/**
@@ -73,7 +85,7 @@ class Searcher {
 		$params = ['query' => $query->esQuery(), 'size' => 0];
 
 		$facetType = isset($options['type']) && isset(self::$facetTypes[$options['type']]) ? $options['type'] : 'terms';
-		$allowParams = self::$facetTypes[$facetType];
+		$allowParams = self::$facetTypes[$facetType]['params'];
 
 		$params['facets']['facet'][$facetType] = [];
 		foreach ($allowParams as $key => $required) {
@@ -85,10 +97,12 @@ class Searcher {
 		}
 
 		$response = self::read(self::locate($type) . "/_search/", $params);
+		$responseConf = self::$facetTypes[$facetType]['response'];
 		$result = [];
-		if (isset($response->facets->facet->$facetType) && is_array($response->facets->facet->$facetType)) {
-			foreach ($response->facets->facet->$facetType as $term) {
-				$result[$term->term] = $term->count;
+		if (isset($response->facets->facet->$responseConf['key']) && is_array($response->facets->facet->$responseConf['key'])) {
+			foreach ($response->facets->facet->$responseConf['key'] as $item) {
+				if (!isset($responseConf['term'])) $result[] = $item;
+				else $result[$item->$responseConf['term']] = $item->$responseConf['count'];
 			}
 		}
 		return $result;
