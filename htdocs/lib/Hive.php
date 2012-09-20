@@ -71,7 +71,7 @@ class Hive {
 		self::$advices[$join_point][$type][] =  array($plugin, $function);
 	}
 
-	private static function exec (AopTriggeredJoinpoint $object, $type, $arg, $iterate) {
+	private static function exec (AopJoinpoint $object, $type, $arg, $iterate) {
 		foreach (self::$advices[$object->getPointcut()][$type] as $each_method) {
 			$result = call_user_func($each_method, $arg);
 			if ($iterate) {
@@ -81,19 +81,19 @@ class Hive {
 		return $result;
 	}
 
-	public static function execAfter(AopTriggeredJoinpoint $object) {
+	public static function execAfter(AopJoinpoint $object) {
 		self::exec($object, self::TYPE_AFTER, $object->getReturnedValue(), false);
 	}
 
-	public static function execBefore(AopTriggeredJoinpoint $object) {
+	public static function execBefore(AopJoinpoint $object) {
 		self::exec($object, self::TYPE_BEFORE, $object->getArguments(), false);
 	}
 
-	public static function changeArg(AopTriggeredJoinpoint $object) {
+	public static function changeArg(AopJoinpoint $object) {
 		$object->setArguments(self::exec($object, self::TYPE_CHANGE_ARGS, $object->getArguments(), true));
 	}
 
-	public static function changeResult(AopTriggeredJoinpoint $object) {
+	public static function changeResult(AopJoinpoint $object) {
 		$object->setReturnedValue(self::exec($object, self::TYPE_CHANGE_RESULT, $object->getReturnedValue(), true));
 	}
 }
