@@ -20,17 +20,7 @@ class ListingPlugin extends Plugin {
 		];
 		return array_merge(parent::getMethods(), $plugins);
 	}
-	/*
-	public function changeListingConnection__findResult ($res) {
-		echo 'xx';
-		try {
-			throw new Exception('ww');
-		} catch (Exception $e) {
-			echo 'exp';
-		}
-		return $res;
-	}
-*/
+
 	public function beforeListingConnection__find($args) {
 		list($this->category, $this->args) = $args;
 		list($this->query, $this->opts) = Listing::buildQuery($this->category, $this->args);
