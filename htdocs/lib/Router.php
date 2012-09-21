@@ -2,16 +2,9 @@
 //lianghonghao@baixing.com
 class Router {
 	public static function urlDispatch(Url $url) {
-		$segments = $url->segments();
-		$controller_name = 'error';
-		switch($segments[0]) {
-			case 'u' :
-				$controller_name = 'user';
-				break;
-			case 'g' :
-				$controller_name = 'graph';
-				break;
-		}
+		$id = $url->segments(0);
+		$base_object = graph($id);
+		$controller_name = $base_object->type() ?: 'error';
 		return ucfirst($controller_name);
 	}
 
