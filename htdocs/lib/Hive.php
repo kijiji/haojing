@@ -32,6 +32,10 @@ class Hive {
 		return $plugin;
 	}
 
+	public static function autoRegister($path) {
+		
+	}
+
 	//@todo privilege control
 	private static function filterJoinPoint(array $methods) {
 		return $methods;
