@@ -30,15 +30,23 @@ class Listing {
 	}
 
 	public static function entities($category, $args) {
+		$tagSet = [];
+		$tagSet['category'] = $category->children();
+
+		$area = isset($args['area']) ? (new Node($args['area']))->load() : null;
+		$tagSet['area'] = $area ? $area->children() : Searcher::query('Entity', new Query('type', 'sheng'), ['size' => 100]);
+
+		return $tagSet;
+		/*
 		$query = self::buildQuery($category, $args)[0];
 		$facetEntities = Searcher::facet('Ad', $query, ['field' => 'entities', 'size' => 200]);
-		$tagSet = [];
 		foreach ($facetEntities as $entity => $count) {
 			if ($count < 3) continue;
 			$node = new Node($entity);
 			$tagSet[$node->type][] = $node;
 		}
 		return array_filter($tagSet, function ($tags) { return count($tags) > 1; });
+		*/
 	}
 
 	public static function buildQuery($category, $args) {

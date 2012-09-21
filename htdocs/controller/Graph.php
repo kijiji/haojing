@@ -1,6 +1,8 @@
 <?php
 //zhaojun@baixing.com
 
+header('Content-Type: text/html;charset=UTF-8');
+
 include_once(__DIR__ . '/../plugin/graph/ListingPlugin.php');
 Hive::register(new ListingPlugin());
 
@@ -48,10 +50,11 @@ class Graph_Controller {
 						'type'	=> $node->type(),
 					);
 				}
-			} elseif(is_array($node)) {
+			} elseif (is_array($node)) {
 				$arr = array();
-				foreach($node as $n) {
-					$arr[] = $n->load();
+				foreach($node as $key => $n) {
+					if ($n instanceof Node) $arr[] = $n->load();
+					else $arr[$key] = $this->format($n);
 				}
 			} else {
 				$arr['error'] = 'Unknown error';
@@ -61,7 +64,6 @@ class Graph_Controller {
 			echo json_encode($e->getMessage());
 		}
 
-		header('Content-Type: text/html;charset=UTF-8');
 		echo json_encode($arr, JSON_UNESCAPED_UNICODE);
 	}
 
