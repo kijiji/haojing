@@ -1,4 +1,6 @@
 <?
+//zhaojun@baixing.com
+include_once(__DIR__ . '/../graph/lib/Searcher.php');
 
 class ListingPlugin extends Plugin {
 	private $category;
@@ -32,7 +34,7 @@ class ListingPlugin extends Plugin {
 	public function ding($listingResult) {
 		if (isset($this->opts['from']) && $this->opts['from'] > 0) return $listingResult;
 		$dingResult = Service::factory('Ding')->ads($this->category, $this->args);
-		$listingResult->mergeIds($dingResult->ids(), true);
+		$listingResult->prepend($dingResult->ids());
 		return $listingResult;
 	}
 
@@ -40,16 +42,35 @@ class ListingPlugin extends Plugin {
 		if (isset($this->opts['from']) && $this->opts['from'] > 0) return $listingResult;
 		//	$ids = CollabrationFilter::getRecommendAds($this->category, $this->args);
 		//	$extendResult = Searcher::query('Ad', new InQuery('id', $ids));
-		//	$listingResult->mergeIds($extendResult->ids());
+		//	$listingResult->append($extendResult->ids());
 		return $listingResult;
 	}
+}
+
+class ListingSearchResult extends SearchResult {
+	public function __construct(SearchResult $r) {
+		$this->ids = $r->ids();
+		list($this->size, $this->from) = array_values($r->page());
+		$this->totalCount = $r->totalCount();
+	}
+
+	public function append(array $ids) {
+		$this->ids += $ids;
+	}
+
+	public function prepend(array $ids) {
+		$this->ids = $ids + $this->ids;
+	}
+
+	//todo: to be implement
+	public function applyFilter($filter) {}
 }
 
 class Listing {
 
 	public static function ads($category, $args) {
 		list($query, $opts) = self::buildQuery($category, $args);
-		return Searcher::query('Ad', $query, $opts);
+		return new ListingSearchResult(Searcher::query('Ad', $query, $opts));
 	}
 
 	public static function entities($category, $args) {
@@ -66,7 +87,7 @@ class Listing {
 
 	public static function buildQuery($category, $args) {
 		$query = new AndQuery(new RawQuery("category:{$category->id} status:0"));
-		if ($args['area']) {
+		if (isset($args['area'])) {
 			$query->add(new Query('area', $args['area']));
 			unset($args['area']);
 		}

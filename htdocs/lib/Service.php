@@ -149,12 +149,12 @@ class DingService extends TimebasedService {
 			$recheckAdIds[$service->ad->id] = $service->ad->id;
 		}
 
-		$res = new SearchResult(null);
-		$res->mergeIds($adIds);
+		$res = new ListingSearchResult(new SearchResult(null));
+		$res->append($adIds);
 
 		if ($recheckAdIds) {
 			$args['id'] = '{' . join(',', $recheckAdIds) . '}';
-			$res->mergeIds(Listing::ads($category, $args)->ids());//re-check
+			$res->append(Listing::ads($category, $args)->ids());//re-check
 		}
 		return $res;
 	}
