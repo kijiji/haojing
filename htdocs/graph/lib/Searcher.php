@@ -4,7 +4,7 @@
 class SearchResult implements IteratorAggregate {
 	private $ids = [];
 	private $totalCount, $size, $from;
-	public function __construct($response, $params = null) {
+	public function __construct($response, $params = []) {
 		if ($response != null && !isset($response->error) && $response->hits->total != 0) {
 			$this->totalCount = $response->hits->total;
 			foreach ($response->hits->hits as $doc) {

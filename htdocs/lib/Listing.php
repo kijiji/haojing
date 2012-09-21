@@ -7,21 +7,24 @@ class ListingPlugin extends Plugin {
 	private $opts;
 
 	public function getMethods() {
-		$plugins = [];
-		$plugins[] = [
-			'method' => 'ListingConnection->find()',
-			'function' => 'ding',
-			'type' => Hive::TYPE_CHANGE_RESULT,
+		return [
+			[
+				'method' => 'ListingConnection->find()',
+				'function' => 'buildQuery',
+				'type' => Hive::TYPE_BEFORE,
+			], [
+				'method' => 'ListingConnection->find()',
+				'function' => 'ding',
+				'type' => Hive::TYPE_CHANGE_RESULT,
+			], [
+				'method' => 'ListingConnection->find()',
+				'function' => 'extend',
+				'type' => Hive::TYPE_CHANGE_RESULT,
+			]
 		];
-		$plugins[] = [
-			'method' => 'ListingConnection->find()',
-			'function' => 'extend',
-			'type' => Hive::TYPE_CHANGE_RESULT,
-		];
-		return array_merge(parent::getMethods(), $plugins);
 	}
 
-	public function beforeListingConnection__find($args) {
+	public function buildQuery($args) {
 		list($this->category, $this->args) = $args;
 		list($this->query, $this->opts) = Listing::buildQuery($this->category, $this->args);
 	}
@@ -50,7 +53,7 @@ class Listing {
 	}
 
 	public static function entities($category, $args) {
-		list($query, $opts) = self::buildQuery($category, $args);
+		$query = self::buildQuery($category, $args)[0];
 		$facetEntities = Searcher::facet('Ad', $query, ['field' => 'entities', 'size' => 200]);
 		$tagSet = [];
 		foreach ($facetEntities as $entity => $count) {
@@ -63,11 +66,11 @@ class Listing {
 
 	public static function buildQuery($category, $args) {
 		$query = new AndQuery(new RawQuery("category:{$category->id} status:0"));
-		//$query = new AndQuery(new RawQuery("entities:{$category->objectId} status:0"));
-		$allowedOptions = array(
-			'size' => true,
-			'from' => true,
-		);
+		if ($args['area']) {
+			$query->add(new Query('area', $args['area']));
+			unset($args['area']);
+		}
+		$allowedOptions = ['size' => true, 'from' => true];
 		$opts = array_intersect_key($args, $allowedOptions);
 		$args = array_diff_key($args, $allowedOptions);
 		foreach ($args as $field => $value) {
