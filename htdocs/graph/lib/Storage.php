@@ -27,7 +27,7 @@ class MysqlStorage extends Storage implements ReadableStorage, SearchableStorage
 	private $result;
 	private static $connections = [];
 	
-	private static function get_connection($db, $type = '.read', $reConnect = false) {
+	private static function getConnection($db, $type = '.read', $reConnect = false) {
 		if($reConnect || !isset(self::$connections[$db.$type])) {
 			$c = Config::get( "env.mysql.{$db}{$type}");
 			$conn = mysql_connect(
@@ -50,7 +50,7 @@ class MysqlStorage extends Storage implements ReadableStorage, SearchableStorage
 	}
 	
 	public function load($id) {
-		$sql = 'SELECT ' . $this->get_col_alias_name() 
+		$sql = 'SELECT ' . $this->getColumnAlias()
 				. ' FROM `' . $this->config['table']
 				. '` WHERE `' . $this->config['columns']['id'] . '` = "' . $id 
 				. '" LIMIT 1';
@@ -60,12 +60,12 @@ class MysqlStorage extends Storage implements ReadableStorage, SearchableStorage
 	}
 	
 	private function query($sql) {
-		$conn = self::get_connection($this->config['db']);
+		$conn = self::getConnection($this->config['db']);
 		$result = mysql_query($sql, $conn);
 		if (!$result) {
 			$errno = mysql_errno($conn);
 			if ($errno == '2006' || $errno == '2013') {	// skip 'MySQL server has gone away' error
-				$conn = self::get_connection($this->config['db'], '.read', true);
+				$conn = self::getConnection($this->config['db'], '.read', true);
 				$result = mysql_query($sql, $conn);
 				if ($result === false) {
 					throw new Exception("Fail to query in mysql! " . mysql_error($conn));
@@ -93,7 +93,7 @@ class MysqlStorage extends Storage implements ReadableStorage, SearchableStorage
 	}
 
 	//为了性能考虑，parse的时候可以少很多次的数据copy
-	private function get_col_alias_name() {
+	private function getColumnAlias() {
 		$string = '';
 		foreach($this->config['columns'] as $obj => $db) {
 			$string .= ", `$db` as `$obj`";
@@ -103,7 +103,7 @@ class MysqlStorage extends Storage implements ReadableStorage, SearchableStorage
 
 	//Start For Searchable
 	public function getAllIds() {
-		$conn = self::get_connection($this->config['db']);
+		$conn = self::getConnection($this->config['db']);
 		$sql = "SELECT `{$this->config['columns']['id']}` FROM `{$this->config['table']}` ORDER BY `{$this->config['columns']['id']}` DESC" ;
 		$this->result = mysql_unbuffered_query($sql, $conn);
 		$bigArray = new BigArray();
@@ -118,7 +118,7 @@ class MysqlStorage extends Storage implements ReadableStorage, SearchableStorage
 			: (isset($this->config['columns']['createdTime']) ? 'createdTime' : null);
 		if(!$col) return [];
 		
-		$conn = self::get_connection($this->config['db']);
+		$conn = self::getConnection($this->config['db']);
 		$sql = "SELECT `{$this->config['columns']['id']}` "
 		. "FROM `{$this->config['table']}` "
 		. "WHERE `{$this->config['columns'][$col]}` >= {$timestamp} "
@@ -137,7 +137,7 @@ class MysqlStorage extends Storage implements ReadableStorage, SearchableStorage
 class MongoStorage extends Storage implements ReadableStorage, SearchableStorage {
 	private static $connections = [];
 
-	private static function get_connection($db, $type = 'read') {
+	private static function getConnection($db, $type = 'read') {
 			if(!isset(self::$connections[$db.$type])) {
 			$conn = new Mongo(Config::get("env.mongo.{$db}.{$type}.server"), Config::get("env.mongo.{$db}.{$type}.option"));
 			self::$connections[$db.$type] = $conn->selectDB($db);
@@ -146,7 +146,7 @@ class MongoStorage extends Storage implements ReadableStorage, SearchableStorage
 	}
 
 	function load($id) {
-		$result = self::get_connection($this->config['db'])
+		$result = self::getConnection($this->config['db'])
 				->selectCollection($this->config['table'])
 				->findOne(array(
 					'_id' => preg_match('/^[0-9a-f]{24}$/', $id) ? new MongoId($id) : $id
@@ -168,7 +168,7 @@ class MongoStorage extends Storage implements ReadableStorage, SearchableStorage
 	}
 
 	public function getAllIds() {
-		$cursor = self::get_connection($this->config['db'])
+		$cursor = self::getConnection($this->config['db'])
 				->selectCollection($this->config['table'])
 				->find([], array('_id' => true));
 
