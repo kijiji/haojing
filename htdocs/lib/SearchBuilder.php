@@ -124,6 +124,7 @@ class AdDoc extends NodeDoc {
 		foreach ($doc as $key => $value) {
 			if (isset($meta[$key]->numeric)) {
 				$doc[$key] = floatval($value);
+				continue;
 			}
 			$type = Node::getType($value);
 			if ($type == 'Entity') {
@@ -140,12 +141,13 @@ class AdDoc extends NodeDoc {
 				$tags[] = $value;
 			}
 		}
-		$doc['tags'] = join(' ', array_map(function($v){return str_replace(' ', '', $v);}, $tags));
-		$doc['entities'] = join(' ', $entities);
+		$doc['tags'] = array_map(function($v){return str_replace(' ', '', $v);}, $tags);
+		$doc['entities'] = $entities;
 
 		$area = $ad->area ?: graph($ad->city->objectId);
-		if($area) $doc['areas'] = join(' ', Util::object_map($area->path(), 'id'));
-		$doc['content'] = $doc['content'] . PHP_EOL . $doc['tags'];	//content include all
+		$doc['area'] = Util::object_map($area->path(), 'id');
+		$doc['category'] = Util::object_map($ad->category->path(), 'id');
+		$doc['content'] = (isset($doc['content']) ? $doc['content'] . PHP_EOL : '') . join('\n', $doc['tags']);	//content include all
 		return $doc;
 	}
 
@@ -164,8 +166,8 @@ class AdDoc extends NodeDoc {
 }
 
 class UserDoc extends NodeDoc {
-	public static function buildDoc($node) {
-		$doc = parent::buildDoc($node);
+	public static function build($node) {
+		$doc = parent::build($node);
 		unset($doc['password']);	//不能索引密码字段
 		return $doc;
 	}
