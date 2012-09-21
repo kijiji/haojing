@@ -18,7 +18,9 @@ class ListingSearchResult extends SearchResult {
 	}
 
 	//todo: to be implement
-	public function applyFilter($filter) {}
+	public function applyFilter($filter) {
+		//$this->ids = $filter->apply($this->ids);
+	}
 }
 
 class Listing {

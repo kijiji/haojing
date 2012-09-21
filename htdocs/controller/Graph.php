@@ -1,26 +1,21 @@
 <?php
 //zhaojun@baixing.com
 
-header('Content-Type: text/html;charset=UTF-8');
-
-include_once(__DIR__ . '/../plugin/graph/ListingPlugin.php');
-Hive::register(new ListingPlugin());
-
 class Graph_Controller {
 	public function handle(Url $url) {
-		if (!isset($url->segments()[1])) {
+		if (!isset($url->segments()[0])) {
 			echo 'please use url to explore haojing graph like: <br /><a href="./ershouqiche/ad">ershouqiche/ad</a>';
 			return;
 		}
 
-		$cmd = $url->segments()[1] . (isset($url->segments()[2]) ? '/' . $url->segments()[2] : '');
+		$cmd = $url->segments()[0] . (isset($url->segments()[1]) ? '/' . $url->segments()[1] : '');
 		$arg = $_SERVER['QUERY_STRING'];
 		try {
 			$node = graph($cmd . ($arg ? '?' . $arg : ''));
 			$args = [];
 			if ($arg) parse_str($arg, $args);
 
-			$graphHost = "http://{$_SERVER['HTTP_HOST']}/g/";//"http://graph.baixing.com/";
+			$graphHost = "http://{$_SERVER['HTTP_HOST']}/";//"http://graph.baixing.com/";
 
 			if ($node instanceof SearchResult) {
 				$arr = [
