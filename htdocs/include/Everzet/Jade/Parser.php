@@ -13,6 +13,7 @@ use Everzet\Jade\Node\DoctypeNode;
 use Everzet\Jade\Node\FilterNode;
 use Everzet\Jade\Node\TagNode;
 use Everzet\Jade\Node\TextNode;
+use Everzet\Jade\Node\MixinNode;
 
 /*
  * This file is part of the Jade.php.
@@ -109,6 +110,8 @@ class Parser
                 return $this->parseText();
             case 'code':
                 return $this->parseCode();
+	    case 'mixin' :
+		return $this->parseMixin();
             case 'id':
             case 'class':
                 $token = $this->lexer->getAdvancedToken();
@@ -119,6 +122,26 @@ class Parser
         }
     }
 
+	protected function parseMixin() {
+		$this->expectTokenType('mixin');
+		$function_name = $this->expectTokenType('text')->value;
+
+		$line_number = $this->lexer->getCurrentLine();
+
+		$next_token = $this->lexer->predictToken();
+
+		if ($line_number == $this->lexer->getCurrentLine()) {
+			$args = $this->expectTokenType('parms');
+		} else {
+			$args = [];
+		}
+		$node =  new MixinNode($function_name, $args, $this->lexer->getCurrentLine());
+
+		if ('indent' === $this->lexer->predictToken()->type) {
+			$node->setBlock($this->parseBlock());
+		}
+		return $node;
+	}
     /**
      * Parse next text token. 
      * 
@@ -266,7 +289,6 @@ class Parser
     {
         $name = $this->lexer->getAdvancedToken()->value;
         $node = new TagNode($name, $this->lexer->getCurrentLine());
-
         // Parse id, class, attributes token
         while (true) {
             switch ($this->lexer->predictToken()->type) {

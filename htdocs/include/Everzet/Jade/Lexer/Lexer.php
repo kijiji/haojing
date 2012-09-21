@@ -136,6 +136,8 @@ class Lexer implements LexerInterface
         $scanners = array(
             'getDeferredToken'
           , 'scanEOS'
+          , 'scanMixin'
+	  , 'scanParms'
           , 'scanTag'
           , 'scanFilter'
           , 'scanCode'
@@ -156,6 +158,19 @@ class Lexer implements LexerInterface
             }
         }
     }
+
+	protected function scanParms() {
+		if (preg_match('#^\(([^\n]+)\)#', $this->input, $match)) {
+			return $this->takeToken('parms', $match[0]);
+		}
+	}
+
+	protected function scanMixin(){
+		if (strpos($this->input, 'mixin') === 0) {
+			$this->consumeInput(5);
+			return $this->takeToken('mixin');
+		}
+	}
 
     /**
      * Consume input. 
