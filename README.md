@@ -19,9 +19,9 @@ haojing
 
 访问
 ----
-镐京兼容朝歌的URL，如：/u/12345，或 /ershouqiche/
-镐京的JSON format graph endpoint: /g/，比如：http://haojing.baixing.com/g/u12345
-或 http://haojing.baixing.com/g/ershouqiche/ad?area=m30
+镐京兼容朝歌的URL，如：/u/12345，或 /ershouqiche/ 。
+镐京的JSON format graph endpoint: /g/，比如：http://haojing.baixing.com/g/u12345 ,
+或 http://haojing.baixing.com/g/ershouqiche/ad?area=m30 。
 
 开发建议
 ----
