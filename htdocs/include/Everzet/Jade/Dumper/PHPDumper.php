@@ -108,6 +108,18 @@ class PHPDumper implements DumperInterface
         $this->filters[$alias] = $filter;
     }
 
+	protected function dumpMixin(\Everzet\Jade\Node\MixinNode $node, $level = 0) {
+		$indent = str_repeat('  ', $level);
+		$html = '';
+		if ($node->getBlock()) {
+			$html .= "$indent<?php function jade_dump_{$node->func} " . ($node->parm ?: "()") . "{ ?>\n";
+			$html .= $this->dumpNode($node->getBlock(), $level + 1);
+			$html .= "\n$indent<?php } ?>";
+		} else {
+			$html .= "$indent<?php jade_dump_{$node->func} " . ($node->parm ?: "()") . "; ?>";
+		}
+		return $html;
+	}
     /**
      * Dump node to string. 
      * 
