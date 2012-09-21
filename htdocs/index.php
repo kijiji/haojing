@@ -3,6 +3,9 @@ include __DIR__ . "/init.php";
 
 header('Content-Type: text/html;charset=UTF-8');
 
+# init graph plugin
+Hive::autoRegister('graph');
+
 # 不要try catch 这个函数！，如果他挂了，我们应该知道
 $graph_url = UrlTranslate::toGraph(new Url);
 
