@@ -69,7 +69,7 @@ class Url {
 
 	public function segments($offset = -1) {
 		if (is_null($this->segments)) {
-			$this->segments = explode('/', trim($this->path, '/'));
+			$this->segments = array_filter(explode('/', trim($this->path, '/')));
 		}
 
 		if ($offset >= 0) {

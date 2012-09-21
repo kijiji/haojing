@@ -2,17 +2,13 @@
 //lianghonghao@baixing.com
 namespace Data;
 
-use \Query;
+use \Query, \Searcher;
 
 class City {
 	use \DataDelegateTrait;
 
 	public static function loadByName($city_english_name) {
-		$city = new self();
-		$cities = \Searcher::query('City', new Query('englishName', $city_english_name), [
-			'size' => 1
-		])->objs();
-		$city->bind(reset($cities));
-		return $city;
+		$cities = Searcher::query('City', new Query('englishName', $city_english_name), ['size' => 1])->objs();
+		return $cities ? new self($cities[0]) : null;
 	}
 }

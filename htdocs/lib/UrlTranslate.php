@@ -8,7 +8,7 @@ class UrlTranslate {
 		} elseif (count($url->segments()) == 1 && ctype_alpha($url->segments(0))){
 			$city = City::loadByName(explode('.', $url->getCurrentHost())[0]);
 			$url->setPath($url->segments(0));
-			$url->set('area', $city->objectId);
+			if ($city && !$url->get('area')) $url->set('area', $city->objectId);
 		} elseif (preg_match('#a(\d+)\.html#', $url->segments(1), $matches)) {
 			$url->setPath($matches[1]);
 		}
