@@ -29,11 +29,11 @@ class SearchResult implements IteratorAggregate {
 	}
 
 	public function prevPage() {
-		return $this->from ? ['size' => $this->size, 'from' => max($this->size - $this->from, 0)] : null;
+		return $this->from ? ['size' => $this->size, 'from' => max($this->from - $this->size, 0)] : [];
 	}
 
 	public function nextPage() {
-		return $this->totalCount > ($this->size + $this->from) ? ['size' => $this->size, 'from' => $this->size + $this->from] : null;
+		return $this->totalCount > ($this->size + $this->from) ? ['size' => $this->size, 'from' => $this->size + $this->from] : [];
 	}
 
 	public function totalCount() {

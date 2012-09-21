@@ -15,8 +15,16 @@ haojing
 >cli.php  => 命令行工具  
 >>config   => 配置文件目录  
 >>graph    => 数据访问层
+>>lib    => 镐京的核心逻辑
 
+访问
+----
+镐京兼容朝歌的URL，如：/u/12345，或 /ershouqiche/
+镐京的JSON format graph endpoint: /g/，比如：http://haojing.baixing.com/g/u12345
+或 http://haojing.baixing.com/g/ershouqiche/ad?area=m30
 
+开发建议
+----
 如何修改和提交代码：  
 推荐每个人都fork一份代码，然后在自己的repo里面做分支开发。  
 当开发完毕需要上线的时候，先提交pull request到项目主干，同时指派给别人做review code。  
