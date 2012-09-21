@@ -2,8 +2,8 @@
 //yubing@baixing.com
 
 class SearchResult implements IteratorAggregate {
-	private $ids = [];
-	private $totalCount, $size, $from;
+	protected  $ids = [];
+	protected $totalCount, $size, $from;
 	public function __construct($response, $params = []) {
 		if ($response != null && !isset($response->error) && $response->hits->total != 0) {
 			$this->totalCount = $response->hits->total;
@@ -19,21 +19,20 @@ class SearchResult implements IteratorAggregate {
 		return $this->ids;
 	}
 
-	public function mergeIds($ids, $mergeBefore = null) {
-		$this->ids = array_unique($mergeBefore ? $ids + $this->ids : $this->ids + $ids);
-		return $this;
-	}
-
 	public function objs() {
 		return Node::multiLoad($this->ids);
 	}
 
+	public function page() {
+		return ['size' => $this->size, 'from' => $this->from];
+	}
+
 	public function prevPage() {
-		return $this->from ? ['size' => $this->size, 'from' => max($this->size - $this->from, 0)] : null;
+		return $this->from ? ['size' => $this->size, 'from' => max($this->from - $this->size, 0)] : [];
 	}
 
 	public function nextPage() {
-		return $this->totalCount > ($this->size + $this->from) ? ['size' => $this->size, 'from' => $this->size + $this->from] : null;
+		return $this->totalCount > ($this->size + $this->from) ? ['size' => $this->size, 'from' => $this->size + $this->from] : [];
 	}
 
 	public function totalCount() {

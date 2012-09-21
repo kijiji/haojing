@@ -8,6 +8,9 @@ class Router {
 			case 'u' :
 				$controller_name = 'user';
 				break;
+			case 'g' :
+				$controller_name = 'graph';
+				break;
 		}
 		return ucfirst($controller_name);
 	}
