@@ -1,6 +1,9 @@
 <?php
 //zhaojun@baixing.com
 
+include_once(__DIR__ . '/../plugin/graph/ListingPlugin.php');
+Hive::register(new ListingPlugin());
+
 class Graph_Controller {
 	public function handle(Url $url) {
 		if (!isset($url->segments()[1])) {
